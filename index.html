@@ -31,10 +31,10 @@
             align-items: center;
         }
 
-        .signup-container {
-            max-width: 500px;
+        .auth-container {
+            max-width: 400px;
             width: 90%;
-            margin: 2rem;
+            margin: 2rem auto;
             padding: 2.5rem;
             background: white;
             border-radius: 12px;
@@ -46,12 +46,61 @@
             margin-bottom: 2.5rem;
         }
         
-        .signup-header h1 {
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .auth-header h1 {
             color: var(--primary-color);
             margin-bottom: 0.75rem;
             font-size: 2.2rem;
             font-weight: 300;
             letter-spacing: -0.5px;
+        }
+        
+        .auth-header p {
+            color: var(--text-light);
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+            padding: 0.85rem 1.25rem;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-light);
+        }
+        
+        .auth-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-light);
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .divider span {
+            padding: 0 1rem;
         }
         
         .signup-header p {
@@ -213,52 +262,74 @@
         </nav>
     </header>
     
-    <div class="signup-container">
-        <div class="signup-header">
-            <h1>Music for Your Well-being</h1>
-            <p>Discover therapeutic music curated for your mood and mental health</p>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>Welcome to Musicare</h1>
+            <p>Your personal music therapy companion</p>
         </div>
         
-        <form id="signup-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" class="form-control" placeholder="Enter your username" required>
-                <div class="error-message" id="username-error"></div>
+        <!-- Login Form (shown by default) -->
+        <div id="login-container">
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required>
+                    <div class="error-message" id="login-email-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
+                    <div class="error-message" id="login-password-error"></div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                    <div class="error-message" id="login-error" style="margin: 1rem 0; text-align: center;"></div>
+                    
+                    <!-- Success message container -->
+                    <div id="signup-success" class="success-message" style="display: none; margin: 1rem 0; padding: 0.75rem; background-color: #d4edda; color: #155724; border-radius: 4px; text-align: center;">
+                        <span id="success-message">Account created successfully! Please log in.</span>
+                        <div class="spinner-border spinner-border-sm text-success ms-2" role="status" style="vertical-align: middle;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-footer">
+                    <p>Don't have an account? <a href="#" id="show-signup">Create account</a></p>
+                </div>
+            </form>
+            
+            <div class="divider">
+                <span>or</span>
             </div>
             
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
-                <div class="error-message" id="email-error"></div>
+            <div class="demo-section">
+                <a href="app.html" class="btn btn-outline btn-block">Try Demo</a>
             </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-control" placeholder="Create a password (min 8 characters)" required>
-                <div class="error-message" id="password-error"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm-password">Confirm Password</label>
-                <input type="password" id="confirm-password" class="form-control" placeholder="Confirm your password" required>
-                <div class="error-message" id="confirm-password-error"></div>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Create Account</button>
-            
-            <div class="cta-section">
-                <p>Or get started right away</p>
-                <a href="app.html" class="btn btn-outline">Try Demo</a>
-            </div>
-            
-            <div class="login-link">
-                <p>Already have an account? <a href="#" id="login-link">Log in</a></p>
-            </div>
-            <div class="error-message" id="signup-error" style="margin-top: 1rem; text-align: center;"></div>
-        </form>
+        </div>
     </div>
 
-    <!-- Load Firebase SDK -->
+    <!-- Check for success message on page load -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('signup') === 'success') {
+                const successElement = document.getElementById('signup-success');
+                if (successElement) {
+                    successElement.style.display = 'block';
+                    
+                    // Optional: Scroll to the success message
+                    successElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Optional: Remove the success parameter from URL without page reload
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                }
+            }
+        });
+    </script>
+    
+    <!-- Firebase and other scripts -->
     <script type="module">
         // Import Firebase modules from CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
@@ -310,14 +381,86 @@
         function setupAuthStateListener() {
             return firebaseOnAuthStateChanged(auth, (user) => {
                 console.log('Auth state changed:', user ? 'User logged in' : 'No user');
-                if (user) {
-                    // User is signed in, redirect to dashboard
-                    window.location.href = '/dashboard.html';
+                if (user && !window.location.pathname.includes('signup.html')) {
+                    // User is signed in, redirect to app
+                    window.location.href = 'app.html';
                 }
             });
         }
         
         // Initialize auth state listener when the page loads
+        // Handle login form submission
+        const loginForm = document.getElementById('login-form');
+        const showSignupBtn = document.getElementById('show-signup');
+        
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Get form values
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                // Reset error messages
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.textContent = '';
+                    el.style.display = 'none';
+                });
+                
+                // Disable submit button and show loading state
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Signing in...';
+                
+                try {
+                    const { user, error } = await signIn(email, password);
+                    
+                    if (error) {
+                        throw new Error(error);
+                    }
+                    
+                    console.log('User signed in successfully, redirecting to app...');
+                    // Redirect to app.html after successful login
+                    window.location.href = 'app.html';
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    
+                    let errorMessage = 'Failed to sign in. Please check your credentials and try again.';
+                    
+                    if (error.message) {
+                        if (error.message.includes('auth/user-not-found') || error.message.includes('auth/wrong-password')) {
+                            errorMessage = 'Invalid email or password.';
+                        } else if (error.message.includes('auth/invalid-email')) {
+                            errorMessage = 'Please enter a valid email address.';
+                        } else if (error.message.includes('auth/too-many-requests')) {
+                            errorMessage = 'Too many failed attempts. Please try again later.';
+                        }
+                    }
+                    
+                    const errorElement = document.getElementById('login-error');
+                    if (errorElement) {
+                        errorElement.textContent = errorMessage;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    // Re-enable the submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+        }
+        
+        // Handle navigation to signup page
+        if (showSignupBtn) {
+            showSignupBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'signup.html';
+            });
+        }
+        
+        // Initialize auth state listener
         document.addEventListener('DOMContentLoaded', () => {
             const unsubscribe = setupAuthStateListener();
             console.log('Firebase auth initialized');

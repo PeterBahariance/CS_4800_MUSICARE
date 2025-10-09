@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRedirecting = false;
     
     onAuthStateChanged(auth, (user) => {
-        // Only redirect if user is logged in, not already redirecting, and not on the dashboard page
-        if (user && !isRedirecting && !window.location.pathname.endsWith('dashboard.html')) {
+        // Only redirect if user is logged in and not already redirecting
+        if (user && !isRedirecting && !window.location.pathname.endsWith('app.html')) {
             isRedirecting = true;
-            console.log('Redirecting to dashboard...');
-            window.location.href = '/dashboard.html';
+            console.log('Redirecting to app...');
+            window.location.href = 'app.html';
         }
     });
 
