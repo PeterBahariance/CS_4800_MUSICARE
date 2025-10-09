@@ -8,6 +8,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 import mockFilesHandler from './api/mock-files.js';
+import mockPeopleHandler from './api/mock-people.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,6 +26,15 @@ app.all('/api/files', async (req, res) => {
     await mockFilesHandler(req, res);
   } catch (error) {
     console.error('API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.all('/api/people', async (req, res) => {
+  try {
+    await mockPeopleHandler(req, res);
+  } catch (error) {
+    console.error('People API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

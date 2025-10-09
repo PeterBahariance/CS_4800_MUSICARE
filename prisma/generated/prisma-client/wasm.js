@@ -132,6 +132,12 @@ exports.Prisma.FileScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.PeopleScalarFieldEnum = {
+  id: 'id',
+  firstName: 'firstName',
+  lastName: 'lastName'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -144,7 +150,8 @@ exports.Prisma.QueryMode = {
 
 
 exports.Prisma.ModelName = {
-  File: 'File'
+  File: 'File',
+  People: 'People'
 };
 
 /**

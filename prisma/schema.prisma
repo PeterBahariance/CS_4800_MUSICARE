@@ -22,3 +22,12 @@ model File {
 
   @@map("musicare_files")
 }
+
+// People model for database demo
+model People {
+  id        Int    @id @default(autoincrement())
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
+
+  @@map("people")
+}

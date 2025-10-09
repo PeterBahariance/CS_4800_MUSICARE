@@ -27,74 +27,75 @@ export function sidebarDOM() {
     
     // Load saved files from localStorage
     loadSavedFiles();
+};
 
-
-    // Popup system for sidebar navigation
-    function initializePopupSystem() {
-        const navItems = document.querySelectorAll('.nav-item');
-        const popupOverlay = document.getElementById('popup-overlay');
-        const popupTitle = document.getElementById('popup-title');
-        const popupBody = document.getElementById('popup-body');
-        const closeBtn = document.getElementById('close-popup');
-        
-        // Section titles mapping
-        const sectionTitles = {
-            'about': 'About Us',
-            'staff': 'Our Team', 
-            'docs': 'Documentation',
-            'sprints': 'Sprint Logs',
-            'dailies': 'Daily Standups',
-            'report': 'Project Report'
-        };
-        
-        // Add click event listeners to navigation items
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const tabId = item.getAttribute('data-tab');
-                openPopup(tabId, sectionTitles[tabId]);
-                
-                // Update active state
-                navItems.forEach(nav => nav.classList.remove('active'));
-                item.classList.add('active');
-            });
-        });
-        
-        // Close popup functionality
-        closeBtn.addEventListener('click', closePopup);
-        popupOverlay.addEventListener('click', (e) => {
-            if (e.target === popupOverlay) {
-                closePopup();
-            }
-        });
-        
-        // Close popup with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && popupOverlay.classList.contains('active')) {
-                closePopup();
-            }
-        });
-        
-        function openPopup(contentId, title) {
-            const contentTemplate = document.getElementById(`${contentId}-content`);
-            if (contentTemplate) {
-                popupTitle.textContent = title;
-                popupBody.innerHTML = contentTemplate.innerHTML;
-                popupOverlay.classList.add('active');
-                
-                // Re-initialize file upload functionality for the popup content
-                initializePopupFileUploads();
-                
-                // Reload files for this section
-                reloadFilesForSection(contentId);
-            }
-        }
-        
-        function closePopup() {
-            popupOverlay.classList.remove('active');
-            // Remove active state from nav items
+// Popup system for sidebar navigation
+function initializePopupSystem() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const popupOverlay = document.getElementById('popup-overlay');
+    const popupTitle = document.getElementById('popup-title');
+    const popupBody = document.getElementById('popup-body');
+    const closeBtn = document.getElementById('close-popup');
+    
+    // Section titles mapping
+    const sectionTitles = {
+        'about': 'About Us',
+        'staff': 'Our Team',
+        'docs': 'Documentation',
+        'sprints': 'Sprint Logs',
+        'dailies': 'Daily Standups',
+        'report': 'Project Report',
+        'database': 'Database Demo'
+    };
+    
+    // Add click event listeners to navigation items
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const tabId = item.getAttribute('data-tab');
+            openPopup(tabId, sectionTitles[tabId]);
+            
+            // Update active state
             navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+        });
+    });
+    
+    // Close popup functionality
+    closeBtn.addEventListener('click', closePopup);
+    popupOverlay.addEventListener('click', (e) => {
+        if (e.target === popupOverlay) {
+            closePopup();
+        }
+    });
+    
+    // Close popup with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && popupOverlay.classList.contains('active')) {
+            closePopup();
+        }
+    });
+    
+    function openPopup(contentId, title) {
+        const contentTemplate = document.getElementById(`${contentId}-content`);
+        if (contentTemplate) {
+            popupTitle.textContent = title;
+            popupBody.innerHTML = contentTemplate.innerHTML;
+            popupOverlay.classList.add('active');
+            
+            // Re-initialize file upload functionality for the popup content
+            initializePopupFileUploads();
+            
+            // Reload files for this section
+            reloadFilesForSection(contentId);
         }
     }
+    
+    function closePopup() {
+        popupOverlay.classList.remove('active');
+        // Remove active state from nav items
+        navItems.forEach(nav => nav.classList.remove('active'));
+    }
+}
 
     // File upload management
     function initializeFileUploads() {
@@ -432,13 +433,180 @@ export function sidebarDOM() {
         }
     }
 
-    // Add event listeners for download and remove buttons
+// Add event listeners for download and remove buttons
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('download-file')) {
+        const fileId = e.target.getAttribute('data-file-id');
+        downloadFile(fileId);
+    } else if (e.target.classList.contains('remove-file')) {
+        removeFile(e.target);
+    }
+});
+
+// Database Demo Functions
+function initializeDatabaseDemo() {
+    // Add event listeners for database demo buttons
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('download-file')) {
-            const fileId = e.target.getAttribute('data-file-id');
-            downloadFile(fileId);
-        } else if (e.target.classList.contains('remove-file')) {
-            removeFile(e.target);
+        if (e.target.id === 'populate-db-btn') {
+            populateDatabase();
+        } else if (e.target.id === 'refresh-data-btn') {
+            refreshPeopleData();
+        } else if (e.target.id === 'clear-db-btn') {
+            clearDatabase();
         }
     });
 }
+
+async function populateDatabase() {
+    const statusDiv = document.getElementById('db-status');
+    const populateBtn = document.getElementById('populate-db-btn');
+
+    // Update UI to show loading state
+    populateBtn.disabled = true;
+    populateBtn.textContent = 'Populating...';
+    statusDiv.className = 'database-status';
+    statusDiv.innerHTML = '<p>Populating database with sample data...</p>';
+
+    try {
+        const response = await fetch('/api/people', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'populate' })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Update status to success
+        statusDiv.className = 'database-status success';
+        statusDiv.innerHTML = `<p>✅ ${data.message} (${data.count} records created)</p>`;
+
+        // Display the people data
+        displayPeopleData(data.people);
+
+    } catch (error) {
+        console.error('Error populating database:', error);
+        statusDiv.className = 'database-status error';
+        statusDiv.innerHTML = `<p>❌ Error populating database: ${error.message}</p>`;
+    } finally {
+        // Reset button state
+        populateBtn.disabled = false;
+        populateBtn.textContent = 'Populate Database';
+    }
+}
+
+async function refreshPeopleData() {
+    const statusDiv = document.getElementById('db-status');
+    const refreshBtn = document.getElementById('refresh-data-btn');
+
+    // Update UI to show loading state
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = 'Refreshing...';
+
+    try {
+        const response = await fetch('/api/people');
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Update status
+        statusDiv.className = 'database-status success';
+        statusDiv.innerHTML = `<p>✅ Data refreshed successfully (${data.people.length} records found)</p>`;
+
+        // Display the people data
+        displayPeopleData(data.people);
+
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+        statusDiv.className = 'database-status error';
+        statusDiv.innerHTML = `<p>❌ Error refreshing data: ${error.message}</p>`;
+    } finally {
+        // Reset button state
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh Data';
+    }
+}
+
+async function clearDatabase() {
+    const statusDiv = document.getElementById('db-status');
+    const clearBtn = document.getElementById('clear-db-btn');
+
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to delete all people from the database? This action cannot be undone.')) {
+        return;
+    }
+
+    // Update UI to show loading state
+    clearBtn.disabled = true;
+    clearBtn.textContent = 'Clearing...';
+    statusDiv.className = 'database-status';
+    statusDiv.innerHTML = '<p>Clearing database...</p>';
+
+    try {
+        const response = await fetch('/api/people', {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Update status to success
+        statusDiv.className = 'database-status success';
+        statusDiv.innerHTML = `<p>✅ ${data.message} (${data.deletedCount} records deleted)</p>`;
+
+        // Hide the table since there's no data
+        displayPeopleData([]);
+
+    } catch (error) {
+        console.error('Error clearing database:', error);
+        statusDiv.className = 'database-status error';
+        statusDiv.innerHTML = `<p>❌ Error clearing database: ${error.message}</p>`;
+    } finally {
+        // Reset button state
+        clearBtn.disabled = false;
+        clearBtn.textContent = 'Clear Database';
+    }
+}
+
+function displayPeopleData(people) {
+    const tableContainer = document.getElementById('people-table-container');
+    const tableBody = document.getElementById('people-table-body');
+
+    // Clear existing data
+    tableBody.innerHTML = '';
+
+    if (people && people.length > 0) {
+        // Show the table
+        tableContainer.style.display = 'block';
+
+        // Populate table with data
+        people.forEach(person => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${person.id}</td>
+                <td>${person.firstName}</td>
+                <td>${person.lastName}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } else {
+        // Hide the table if no data
+        tableContainer.style.display = 'none';
+    }
+}
+
+// Initialize database demo when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDatabaseDemo();
+});
