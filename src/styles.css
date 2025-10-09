@@ -27,10 +27,163 @@ body {
     min-height: 100vh;
 }
 
-a:visited {
-    color: white;
+a {
     text-decoration: none;
+    color: inherit;
 }
+
+.green-btn {
+    width: fit-content;
+    margin: 10px auto;
+    background-color: #c2fbd7;
+    border-radius: 100px;
+    box-shadow: rgba(44, 187, 99, .2) 0 -25px 18px -14px inset,rgba(44, 187, 99, .15) 0 1px 2px,rgba(44, 187, 99, .15) 0 2px 4px,rgba(44, 187, 99, .15) 0 4px 8px,rgba(44, 187, 99, .15) 0 8px 16px,rgba(44, 187, 99, .15) 0 16px 32px;
+    color: green;
+    cursor: pointer;
+    display: inline-block;
+    font-family: CerebriSans-Regular,-apple-system,system-ui,Roboto,sans-serif;
+    padding: 7px 20px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 250ms;
+    border: 0;
+    font-size: 16px;
+}
+
+.link-btn {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.green-btn:hover {
+    box-shadow: rgba(44,187,99,.35) 0 -25px 18px -14px inset,rgba(44,187,99,.25) 0 1px 2px,rgba(44,187,99,.25) 0 2px 4px,rgba(44,187,99,.25) 0 4px 8px,rgba(44,187,99,.25) 0 8px 16px,rgba(44,187,99,.25) 0 16px 32px;
+    transform: scale(1.05) rotate(-1deg);
+}
+
+/* Login page */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 40px 0;
+}
+
+/* Sign up page */
+input[type="text"], input[type="email"], input[type="password"], select {
+    padding: 10px;
+    margin: 5px 0 15px 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    width: 90%;
+    height: 25px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: content-box;
+}
+
+input[type="checkbox"],
+span {
+  display: inline-block;
+  vertical-align: auto; /* Aligns them vertically */
+  
+}
+
+label {
+    margin-top: 10px;
+}
+
+/* Index page top nav bar */
+.user-bar {
+    display: flex;
+    position: fixed;
+    flex-direction: row;
+    top: 40px;
+    right: 80px;
+    width: fit-content;
+}
+
+/* Notifications overlay */
+.notifications {
+    display: block;             
+    position: fixed;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    transform: translateY(-20px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: -1;                 /* hidden by default */
+    pointer-events: none;        /* prevent clicks when hidden */
+    width: fit-content;
+}
+
+.notifications.active {
+    opacity: 1;
+    transform: translateY(0);
+    z-index: 1000;               /* bring above other UI */
+    pointer-events: auto;        /* allow interaction when visible */
+    /* scrollbar if too many notifications */
+    max-height: 300px;
+    max-width: 500px;
+    overflow-wrap: break-word;
+    overflow-y: scroll;
+}
+
+/* make notification cards readable on colored background */
+.notifications .playlist-card {
+    background: white;
+    box-shadow: none;
+    border: none;
+    padding: 8px 0;
+    color: var(--text-color);
+}
+
+/* Feed page */
+.post-box {
+    padding: 5px; 
+    width: 550px; 
+    height: 300px; 
+    grid-column: span 2; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    border: 2px dashed gray; 
+    cursor: pointer;
+}
+
+
+.postFooter {       /* Footer of each post */
+    margin-top: 10px; 
+    width: 100%; 
+    border-top: 1px solid lightgray; 
+    padding-top: 10px; 
+    display: flex; 
+    justify-content: space-around; 
+    font-size: 14px; 
+    color: gray;
+}
+
+.profilePic {
+    border-radius: 50%;
+    background-color: gray;
+    margin: 5px;
+    height: 25px; 
+    width: 25px;
+}
+
+.post-album-cover {
+    height: 200px; 
+    width: 250px; 
+    margin: 5px; 
+    background-color: gray;
+}
+
 
 /* Sidebar Styles */
 .sidebar {

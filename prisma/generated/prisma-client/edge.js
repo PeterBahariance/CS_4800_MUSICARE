@@ -125,7 +125,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/peterbahariance/Desktop/CS_4800_InitalProject/CS_4800_MUSICARE/prisma/generated/prisma-client",
+      "value": "C:\\Users\\mandy\\mandy's domain\\projects\\CS_4800_MUSICARE\\prisma\\generated\\prisma-client",
       "fromEnvVar": null
     },
     "config": {
@@ -134,12 +134,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/peterbahariance/Desktop/CS_4800_InitalProject/CS_4800_MUSICARE/prisma/schema.prisma",
+    "sourceFilePath": "C:\\Users\\mandy\\mandy's domain\\projects\\CS_4800_MUSICARE\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -152,7 +152,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {
