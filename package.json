@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --mode production",
-    "preview": "vite preview --port 3000",
+    "build": "vite build",
+    "preview": "vite preview --port 5173",
     "dev:express": "node dev-server.js",
-    "vercel-build": "node vercel-build.mjs",
+    "vercel-build": "vite build && prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "postinstall": "prisma generate"
