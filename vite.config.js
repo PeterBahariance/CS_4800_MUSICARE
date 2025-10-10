@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync, existsSync } from 'fs';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables based on the current mode
@@ -14,10 +15,31 @@ export default defineConfig(({ mode }) => {
     }
   }
 
+  // Check if firebase-config.js exists in the root
+  let firebaseConfig = {};
+  const firebaseConfigPath = resolve(__dirname, 'firebase-config.js');
+  
+  if (existsSync(firebaseConfigPath)) {
+    try {
+      // Read and parse the Firebase config
+      const configContent = readFileSync(firebaseConfigPath, 'utf-8');
+      // Extract the firebaseConfig object using a regex
+      const configMatch = configContent.match(/export\s+const\s+firebaseConfig\s*=\s*({[\s\S]*?});/);
+      if (configMatch && configMatch[1]) {
+        firebaseConfig = JSON.parse(configMatch[1].replace(/'/g, '"'));
+      }
+    } catch (error) {
+      console.warn('Failed to parse firebase-config.js:', error);
+    }
+  }
+
   return {
     root: '.',
     define: {
-      'import.meta.env': JSON.stringify(clientEnv),
+      'import.meta.env': JSON.stringify({
+        ...clientEnv,
+        VITE_FIREBASE_CONFIG: firebaseConfig
+      }),
       'process.env': {},
     },
     server: {

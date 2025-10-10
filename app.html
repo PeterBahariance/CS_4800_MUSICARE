@@ -427,10 +427,14 @@
             onAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
         
-        // Import Firebase config
-        import { firebaseConfig } from '/src/firebase/firebase-config.js';
+        // Initialize Firebase with config from Vite
+        const firebaseConfig = import.meta.env.VITE_FIREBASE_CONFIG;
+        if (!firebaseConfig || !firebaseConfig.apiKey) {
+            console.error('Firebase configuration is missing or invalid');
+            // Show error to user
+            alert('Error: Firebase configuration is missing. The app may not work correctly.');
+        }
         
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
