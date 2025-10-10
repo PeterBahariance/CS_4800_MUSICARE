@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables based on the current mode
@@ -23,6 +24,14 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       open: true,
       cors: true,
+      // Proxy API requests to avoid CORS issues in development
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
+        }
+      }
     },
     resolve: {
       alias: {
@@ -32,11 +41,18 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      // Copy API directory to dist
       rollupOptions: {
         input: {
           main: './index.html',
           notif: './notif.html',
           app: './app.html',
+        },
+        output: {
+          // Preserve directory structure in dist
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
         },
       },
     },

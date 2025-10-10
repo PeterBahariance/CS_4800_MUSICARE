@@ -11,6 +11,10 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h3>Musicare</h3>
+            <div id="user-info" style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
+                <div>Signed in as:</div>
+                <div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
+            </div>
             <div class="github-link">
                 <a href="https://github.com/PeterBahariance/CS_4800_MUSICARE" target="_blank" rel="noopener noreferrer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -50,9 +54,13 @@
                 <span class="nav-text">Database Demo</span>
             </div>
                 <div class="nav-item">
-                <span class="nav-icon">🔔</span>
-                <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
-            </div>
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
+                </div>
+                <div class="nav-item" id="sign-out-btn" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Sign Out</span>
+                </div>
         </nav>
     </div>
 
@@ -410,6 +418,128 @@
             </div>
         </div>
     </div>
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+        import { 
+            getAuth, 
+            signOut as firebaseSignOut,
+            onAuthStateChanged
+        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
+        
+        // Import Firebase config
+        import { firebaseConfig } from '/src/firebase/firebase-config.js';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        // Update UI based on auth state
+        onAuthStateChanged(auth, (user) => {
+            const userInfo = document.getElementById('user-info');
+            const userEmail = document.getElementById('user-email');
+            
+            if (user) {
+                // User is signed in
+                userEmail.textContent = user.email;
+                userInfo.style.display = 'block';
+            } else {
+                // User is signed out
+                userInfo.style.display = 'none';
+            }
+        });
+        
+        // Function to show a confirmation dialog
+        function showConfirmationDialog(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                overlay.style.display = 'flex';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '1000';
+
+                const dialog = document.createElement('div');
+                dialog.style.backgroundColor = 'white';
+                dialog.style.padding = '20px';
+                dialog.style.borderRadius = '8px';
+                dialog.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                dialog.style.maxWidth = '400px';
+                dialog.style.width = '80%';
+                dialog.style.textAlign = 'center';
+
+                dialog.innerHTML = `
+                    <h3 style="margin-top: 0; color: #333;">${message}</h3>
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                        <button id="confirm-yes" style="padding: 8px 20px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Yes, Sign Out</button>
+                        <button id="confirm-no" style="padding: 8px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    </div>
+                `;
+
+                overlay.appendChild(dialog);
+                document.body.appendChild(overlay);
+
+                // Handle button clicks
+                document.getElementById('confirm-yes').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                });
+
+                document.getElementById('confirm-no').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                });
+            });
+        }
+
+        // Function to show a loading indicator
+        function showLoading(message) {
+            const loading = document.createElement('div');
+            loading.id = 'loading-indicator';
+            loading.style.position = 'fixed';
+            loading.style.top = '0';
+            loading.style.left = '0';
+            loading.style.width = '100%';
+            loading.style.height = '100%';
+            loading.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            loading.style.display = 'flex';
+            loading.style.flexDirection = 'column';
+            loading.style.justifyContent = 'center';
+            loading.style.alignItems = 'center';
+            loading.style.zIndex = '1000';
+            loading.style.color = 'white';
+            loading.innerHTML = `
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
+                <p>${message}</p>
+            `;
+            document.body.appendChild(loading);
+        }
+
+        // Add click event listener to sign out button
+        document.getElementById('sign-out-btn').addEventListener('click', async () => {
+            const confirm = await showConfirmationDialog('Are you sure you want to sign out?');
+            
+            if (confirm) {
+                showLoading('Signing out...');
+                try {
+                    await firebaseSignOut(auth);
+                    // Small delay to show the loading indicator
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                    document.body.removeChild(document.getElementById('loading-indicator'));
+                    alert('Error signing out. Please try again.');
+                }
+            }
+        });
+    </script>
     <script type="module" src="./script.js"></script>
 </body>
 </html>
