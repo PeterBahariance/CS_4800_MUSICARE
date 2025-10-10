@@ -47,9 +47,15 @@ const navItems = document.querySelectorAll('.nav-item[data-tab]');
 let currentTab = null;
 
 function showTab(tabId) {
-  // Hide all content sections
-  document.querySelectorAll('.content-section').forEach(section => {
-    section.style.display = 'none';
+  // Get the main content area
+  const mainContent = document.querySelector('.main-content');
+  
+  // Hide all content sections and remove them from the DOM
+  const existingSections = document.querySelectorAll('.content-section');
+  existingSections.forEach(section => {
+    if (section.id !== `${tabId}-content`) {
+      section.remove();
+    }
   });
   
   // Remove active class from all nav items
@@ -58,19 +64,39 @@ function showTab(tabId) {
   });
   
   // Show the selected tab content
-  const contentSection = document.getElementById(`${tabId}-content`);
-  if (contentSection) {
-    contentSection.style.display = 'block';
-  } else {
+  let contentSection = document.getElementById(`${tabId}-content`);
+  
+  if (!contentSection) {
     // If content section doesn't exist, try to get it from the templates
     const template = document.querySelector(`.content-templates #${tabId}-content`);
     if (template) {
-      const content = template.cloneNode(true);
-      content.id = `${tabId}-content`;
-      content.className = 'content-section';
-      document.querySelector('.main-content').appendChild(content);
-      content.style.display = 'block';
+      contentSection = template.cloneNode(true);
+      contentSection.id = `${tabId}-content`;
+      contentSection.className = 'content-section';
+      
+      // Insert the content section after the welcome message or at the beginning of main content
+      const welcomeMessage = document.querySelector('.welcome-message');
+      if (welcomeMessage && welcomeMessage.nextSibling) {
+        welcomeMessage.parentNode.insertBefore(contentSection, welcomeMessage.nextSibling);
+      } else {
+        mainContent.insertBefore(contentSection, mainContent.firstChild);
+      }
     }
+  }
+  
+  // Show the content section with a nice animation
+  if (contentSection) {
+    contentSection.style.display = 'block';
+    contentSection.style.opacity = '0';
+    contentSection.style.transform = 'translateY(20px)';
+    contentSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    
+    // Trigger reflow
+    void contentSection.offsetWidth;
+    
+    // Animate in
+    contentSection.style.opacity = '1';
+    contentSection.style.transform = 'translateY(0)';
   }
   
   // Add active class to clicked nav item
