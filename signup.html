@@ -14,6 +14,7 @@
             --text-light: #7f8c8d;
             --border-color: #e1e4e8;
             --error-color: #e74c3c;
+            --success-color: #2ecc71;
             --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
@@ -37,6 +38,16 @@
             align-items: center;
         }
 
+        .auth-container {
+            max-width: 500px;
+            width: 90%;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
         .auth-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -55,16 +66,6 @@
             margin: 0;
             font-size: 1.1rem;
             font-weight: 300;
-        }
-
-        .auth-container {
-            max-width: 500px;
-            width: 90%;
-            margin: 2rem auto;
-            padding: 2.5rem;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
         .form-group {
@@ -110,22 +111,22 @@
         }
 
         .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: #4a90e2; /* Direct color value */
+            color: white !important;
+            border: none;
+            border-radius: 6px;
+            padding: 0.85rem 1.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: block;
+            width: 100%;
+            text-align: center;
         }
 
         .btn-primary:hover {
-            background-color: var(--primary-dark);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .btn-outline:hover {
-            background: rgba(74, 144, 226, 0.1);
+            background-color: #357abd; /* Slightly darker blue */
         }
 
         .btn-block {
@@ -139,18 +140,6 @@
             font-size: 0.85rem;
             margin-top: 0.5rem;
             display: none;
-            font-weight: 500;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: var(--text-light);
-        }
-
-        .auth-footer a {
-            color: var(--primary-color);
-            text-decoration: none;
             font-weight: 500;
         }
 
@@ -169,6 +158,45 @@
 
         .back-to-login a svg {
             margin-right: 0.5rem;
+        }
+
+        /* Success message */
+        .success-message {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 1rem 0;
+            text-align: center;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        /* Loading state */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn-loading:after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            border: 3px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: button-loading-spinner 1s ease infinite;
+        }
+
+        @keyframes button-loading-spinner {
+            from { transform: rotate(0turn); }
+            to { transform: rotate(1turn); }
         }
     </style>
 </head>
@@ -204,7 +232,10 @@
                 <div class="error-message" id="confirm-password-error"></div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            <button type="submit" class="btn btn-primary btn-block">
+                <span class="btn-text">Create Account</span>
+            </button>
+            
             <div class="error-message" id="signup-error" style="margin: 1rem 0; text-align: center;"></div>
             
             <div class="back-to-login">
@@ -219,325 +250,7 @@
         </form>
     </div>
 
-    <!-- Load Firebase SDK -->
-    <script type="module">
-        // Import Firebase modules from CDN
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword,
-            onAuthStateChanged as firebaseOnAuthStateChanged
-        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
-
-        // Import Firebase config from src/firebase/config.js
-        let firebaseConfig = {};
-        try {
-            const { firebaseConfig: config } = await import('/src/firebase/config.js');
-            firebaseConfig = config;
-            console.log('Firebase config loaded successfully');
-        } catch (error) {
-            console.error('Error loading Firebase config:', error);
-            const errorElement = document.getElementById('signup-error');
-            if (errorElement) {
-                errorElement.textContent = 'Error: Failed to load Firebase configuration. Please refresh the page or contact support.';
-                errorElement.style.display = 'block';
-            }
-            
-            // Set default empty config to prevent further errors
-            firebaseConfig = {
-                apiKey: "",
-                authDomain: "",
-                projectId: "",
-                storageBucket: "",
-                messagingSenderId: "",
-                appId: ""
-            };
-        }
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Auth functions
-        async function signUp(email, password) {
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                return { user: userCredential.user, error: null };
-            } catch (error) {
-                console.log('Signup error in signUp function:', error);
-                return { user: null, error };
-            }
-        }
-
-        // Set up auth state change listener
-        function setupAuthStateListener() {
-            return firebaseOnAuthStateChanged(auth, (user) => {
-                console.log('Auth state changed:', user ? 'User logged in' : 'No user');
-                // Don't redirect on signup page - we'll handle the redirect manually
-                if (user && !window.location.pathname.includes('signup.html')) {
-                    window.location.href = 'index.html';
-                }
-            });
-        }
-
-        // Handle signup form submission
-        const signupForm = document.getElementById('signup-form');
-        if (signupForm) {
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                // Get form values
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirm-password').value;
-                const username = document.getElementById('username').value;
-                
-                // Reset error messages
-                document.querySelectorAll('.error-message').forEach(el => {
-                    el.textContent = '';
-                    el.style.display = 'none';
-                });
-                
-                // Validate form
-                let hasError = false;
-                
-                if (password !== confirmPassword) {
-                    const errorElement = document.getElementById('confirm-password-error');
-                    if (errorElement) {
-                        errorElement.textContent = 'Passwords do not match';
-                        errorElement.style.display = 'block';
-                        hasError = true;
-                    }
-                }
-                
-                if (password.length < 8) {
-                    const errorElement = document.getElementById('password-error');
-                    if (errorElement) {
-                        errorElement.textContent = 'Password must be at least 8 characters';
-                        errorElement.style.display = 'block';
-                        hasError = true;
-                    }
-                }
-                
-                if (hasError) return;
-                
-                // Disable submit button and show loading state
-                const submitBtn = signupForm.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Creating Account...';
-                
-                try {
-                    // First, create the user in Firebase
-                    const { user, error: signUpError } = await signUp(email, password);
-                    
-                    if (signUpError) {
-                        throw signUpError;
-                    }
-                    
-                    console.log('User created in Firebase, saving to PostgreSQL...');
-                    
-                    // Save user to PostgreSQL in a separate try-catch
-                    // so a database error doesn't prevent login
-                    try {
-                        console.log('Sending request to /api/users with data:', { email, username });
-                        
-                        let response;
-                        try {
-                            response = await fetch('/api/users', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    email: email,
-                                    displayName: username || null
-                                })
-                            });
-                            console.log('Received response status:', response.status);
-                            
-                            const result = await response.json().catch(e => {
-                                console.error('Failed to parse JSON response:', e);
-                                return { error: 'Invalid JSON response from server' };
-                            });
-                            
-                            console.log('API Response:', result);
-                            
-                            if (!response.ok) {
-                                console.error('Failed to save user profile:', result);
-                                showWarningMessage('Profile saved with limited functionality. Some features may not work.');
-                            } else {
-                                console.log('User profile saved successfully:', result);
-                            }
-                            
-                            // Continue with the success flow in either case
-                            handleSignupSuccess();
-                            
-                        } catch (fetchError) {
-                            console.error('Error during fetch:', fetchError);
-                            showWarningMessage('Account created, but there was an issue saving your profile. You can still log in.');
-                            handleSignupSuccess();
-                        }
-                        
-                        // Success handler for signup
-                        function handleSignupSuccess() {
-                            // Hide the form
-                            const form = document.getElementById('signup-form');
-                            if (form) form.style.display = 'none';
-                            
-                            // Create and show success message
-                            const successMessage = document.createElement('div');
-                            successMessage.style.maxWidth = '500px';
-                            successMessage.style.margin = '100px auto';
-                            successMessage.style.padding = '30px';
-                            successMessage.style.backgroundColor = '#f8f9fa';
-                            successMessage.style.borderRadius = '8px';
-                            successMessage.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                            successMessage.style.textAlign = 'center';
-                            
-                            successMessage.innerHTML = `
-                                <div style="font-size: 24px; color: #28a745; margin-bottom: 20px;">
-                                    <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
-                                    Account Created Successfully!
-                                </div>
-                                <p>Redirecting you to the app...</p>
-                            `;
-                            
-                            document.body.appendChild(successMessage);
-                            
-                            // Redirect immediately
-                            window.location.href = 'app.html';
-                        }
-                        
-                        // Call the success handler
-                        handleSignupSuccess();
-                    } catch (dbError) {
-                        console.error('Database error:', dbError);
-                        // Even if PostgreSQL save fails, we'll still consider this a success since Firebase auth worked
-                        // But we'll show a warning to the user
-                        const errorElement = document.getElementById('signup-error');
-                        if (errorElement) {
-                            errorElement.textContent = 'Account created, but there was an issue saving your profile. Please update your profile in the app.';
-                            errorElement.style.display = 'block';
-                        }
-                        
-                        // Still redirect to app but with a shorter delay
-                        setTimeout(() => {
-                            window.location.href = 'app.html';
-                        }, 2000);
-                    }
-                } catch (error) {
-                    console.error('Signup error:', error);
-                    
-                    // Re-enable the submit button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Create Account';
-                    
-                    let errorMessage = 'Failed to create account. Please try again.';
-                    let showRetryButton = false;
-                    
-                    // Check for database connection errors
-                    if ((error.details && error.details.includes('database')) || 
-                        error.code === 'P1001' || error.code === 'P1017') {
-                        errorMessage = 'Unable to connect to the database. Please try again later.';
-                        showRetryButton = true;
-                    } 
-                    // Firebase authentication errors
-                    else if (error.code) {
-                        console.log('Error code:', error.code);
-                        switch (error.code) {
-                            case 'auth/email-already-in-use':
-                                errorMessage = 'An account with this email already exists.';
-                                break;
-                            case 'auth/invalid-email':
-                                errorMessage = 'Please enter a valid email address.';
-                                break;
-                            case 'auth/weak-password':
-                                errorMessage = 'Password should be at least 6 characters.';
-                                break;
-                            case 'auth/network-request-failed':
-                                errorMessage = 'Network error. Please check your internet connection.';
-                                showRetryButton = true;
-                                break;
-                            default:
-                                errorMessage = error.message || errorMessage;
-                        }
-                    }
-                    
-                    // If it's a database error, log the full error to console
-                    if (showRetryButton) {
-                        console.error('Database error details:', error);
-                    }
-                    
-                    const errorElement = document.getElementById('signup-error');
-                    if (errorElement) {
-                        errorElement.textContent = errorMessage;
-                        errorElement.style.display = 'block';
-                        
-                        // Add retry button for database errors
-                        if (showRetryButton) {
-                            const retryBtn = document.createElement('button');
-                            retryBtn.textContent = 'Retry';
-                            retryBtn.style.marginTop = '10px';
-                            retryBtn.style.padding = '8px 16px';
-                            retryBtn.style.backgroundColor = 'var(--primary-color)';
-                            retryBtn.style.color = 'white';
-                            retryBtn.style.border = 'none';
-                            retryBtn.style.borderRadius = '4px';
-                            retryBtn.style.cursor = 'pointer';
-                            retryBtn.onclick = () => {
-                                errorElement.textContent = 'Retrying...';
-                                signupForm.dispatchEvent(new Event('submit'));
-                            };
-                            
-                            // Clear any existing retry button
-                            const existingRetry = errorElement.querySelector('button');
-                            if (!existingRetry) {
-                                errorElement.appendChild(document.createElement('br'));
-                                errorElement.appendChild(retryBtn);
-                            }
-                        }
-                    }
-                    
-                    // Re-enable the submit button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Create Account';
-                }
-            });
-        }
-        
-        // Function to show warning messages
-        function showWarningMessage(message) {
-            const warningElement = document.createElement('div');
-            warningElement.style.position = 'fixed';
-            warningElement.style.top = '20px';
-            warningElement.style.left = '50%';
-            warningElement.style.transform = 'translateX(-50%)';
-            warningElement.style.padding = '15px 30px';
-            warningElement.style.backgroundColor = '#fff3cd';
-            warningElement.style.color = '#856404';
-            warningElement.style.border = '1px solid #ffeeba';
-            warningElement.style.borderRadius = '4px';
-            warningElement.style.zIndex = '1000';
-            warningElement.textContent = message;
-            document.body.appendChild(warningElement);
-            
-            // Remove the warning after 5 seconds
-            setTimeout(() => {
-                warningElement.style.opacity = '0';
-                setTimeout(() => warningElement.remove(), 300);
-            }, 5000);
-        }
-
-        // Initialize auth state listener
-        document.addEventListener('DOMContentLoaded', () => {
-            const unsubscribe = setupAuthStateListener();
-            console.log('Firebase auth initialized');
-            
-            // Cleanup on page unload
-            window.addEventListener('unload', () => {
-                if (unsubscribe) unsubscribe();
-            });
-        });
-    </script>
+    <!-- Main application script -->
+    <script type="module" src="/src/pages/signup.js"></script>
 </body>
 </html>

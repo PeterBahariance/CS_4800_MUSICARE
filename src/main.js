@@ -99,52 +99,123 @@ document.addEventListener('DOMContentLoaded', () => {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('signup-email')?.value || '';
-            const password = document.getElementById('signup-password')?.value || '';
-            const confirmPassword = document.getElementById('signup-confirm-password')?.value || '';
+            const email = document.getElementById('email')?.value.trim() || '';
+            const password = document.getElementById('password')?.value || '';
+            const confirmPassword = document.getElementById('confirm-password')?.value || '';
+            const username = document.getElementById('username')?.value.trim() || '';
+            
             const errorElement = document.getElementById('signup-error');
             const submitBtn = signupForm.querySelector('button[type="submit"]');
+            const btnText = submitBtn.querySelector('.btn-text');
             
             // Reset error messages
-            if (errorElement) {
-                errorElement.textContent = '';
-                errorElement.style.display = 'none';
-            }
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
+            });
             
             // Validate form
-            if (password !== confirmPassword) {
-                if (errorElement) {
-                    errorElement.textContent = 'Passwords do not match';
-                    errorElement.style.display = 'block';
+            let hasError = false;
+            
+            if (!username) {
+                const usernameError = document.getElementById('username-error');
+                if (usernameError) {
+                    usernameError.textContent = 'Username is required';
+                    usernameError.style.display = 'block';
+                    hasError = true;
                 }
-                return;
             }
             
-            if (password.length < 6) {
-                if (errorElement) {
-                    errorElement.textContent = 'Password must be at least 6 characters';
-                    errorElement.style.display = 'block';
+            if (!email) {
+                const emailError = document.getElementById('email-error');
+                if (emailError) {
+                    emailError.textContent = 'Email is required';
+                    emailError.style.display = 'block';
+                    hasError = true;
                 }
-                return;
+            } else if (!/\S+@\S+\.\S+/.test(email)) {
+                const emailError = document.getElementById('email-error');
+                if (emailError) {
+                    emailError.textContent = 'Please enter a valid email address';
+                    emailError.style.display = 'block';
+                    hasError = true;
+                }
             }
+            
+            if (password.length < 8) {
+                const passwordError = document.getElementById('password-error');
+                if (passwordError) {
+                    passwordError.textContent = 'Password must be at least 8 characters';
+                    passwordError.style.display = 'block';
+                    hasError = true;
+                }
+            }
+            
+            if (password !== confirmPassword) {
+                const confirmPasswordError = document.getElementById('confirm-password-error');
+                if (confirmPasswordError) {
+                    confirmPasswordError.textContent = 'Passwords do not match';
+                    confirmPasswordError.style.display = 'block';
+                    hasError = true;
+                }
+            }
+            
+            if (hasError) return;
             
             // Show loading state
-            const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Creating Account...';
+            submitBtn.classList.add('btn-loading');
+            if (btnText) btnText.textContent = 'Creating Account...';
             
             try {
+                // Create user in Firebase
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('User created:', userCredential.user);
                 
-                // Show success message and switch to login
-                if (signupContainer) signupContainer.style.display = 'none';
-                if (loginContainer) loginContainer.style.display = 'block';
-                const successElement = document.getElementById('signup-success');
-                if (successElement) successElement.style.display = 'block';
+                // Save additional user data to Firestore or your backend
+                try {
+                    const response = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            uid: userCredential.user.uid,
+                            email,
+                            username,
+                            createdAt: new Date().toISOString()
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to save user data');
+                    }
+                    
+                    // Show success message
+                    const successMessage = document.createElement('div');
+                    successMessage.className = 'success-message';
+                    successMessage.textContent = 'Account created successfully! Redirecting...';
+                    signupForm.appendChild(successMessage);
+                    
+                    // Redirect to app after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'app.html';
+                    }, 1500);
+                    
+                } catch (dbError) {
+                    console.error('Database error:', dbError);
+                    // Even if database save fails, the user is still created in Firebase
+                    // Show a warning but still log them in
+                    const warning = document.createElement('div');
+                    warning.className = 'warning-message';
+                    warning.textContent = 'Account created, but there was an issue saving your profile. You can update it later.';
+                    signupForm.insertBefore(warning, signupForm.firstChild);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'app.html';
+                    }, 3000);
+                }
                 
-                // Reset form
-                signupForm.reset();
             } catch (error) {
                 console.error('Signup error:', error);
                 
@@ -162,15 +233,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (errorElement) {
                     errorElement.textContent = errorMessage;
                     errorElement.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        errorElement.style.display = 'none';
-                    }, 5000);
                 }
                 
                 // Re-enable submit button
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+                submitBtn.classList.remove('btn-loading');
+                if (btnText) btnText.textContent = 'Create Account';
             }
         });
     }

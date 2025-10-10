@@ -92,11 +92,131 @@ a:visited {
     cursor: pointer;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
+    user-select: none;
 }
 
 .nav-item:hover {
     background: rgba(255, 255, 255, 0.1);
     border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-left-color: white;
+    font-weight: 500;
+}
+
+.nav-item.active .nav-icon {
+    transform: scale(1.1);
+}
+
+.nav-icon {
+    margin-right: 10px;
+    transition: transform 0.2s ease;
+}
+
+.nav-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Content sections */
+.content-section {
+    display: none;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin: 20px 0;
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    z-index: 1;
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Make sure the welcome message is properly spaced when content is shown */
+.main-content > .welcome-message {
+    margin-bottom: 30px;
+}
+
+/* Ensure content sections have proper spacing */
+.section-content {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Style for file upload sections */
+.file-upload-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #e1e4e8;
+    text-align: center;
+}
+
+.file-upload-area {
+    padding: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.file-upload-area:hover {
+    background: rgba(74, 144, 226, 0.05);
+    border-color: var(--primary-color);
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+
+.upload-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 15px;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.upload-btn:hover {
+    background: var(--primary-dark);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Welcome message styles */
+.welcome-message {
+    text-align: center;
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eff9 100%);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.welcome-message h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.welcome-message .subtitle {
+    color: var(--text-light);
+    font-size: 1.1rem;
+    margin-top: 10px;
 }
 
 .nav-item.active {
