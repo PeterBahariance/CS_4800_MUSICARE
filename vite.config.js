@@ -3,20 +3,18 @@ import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
-  // Determine if we're in production mode
   const isProduction = mode === 'production';
-  
-  // Load all environment variables
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   
   // Log environment variables for debugging
   console.log('Vite Environment:', {
     NODE_ENV: process.env.NODE_ENV,
     MODE: mode,
-    VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY ? '***' : 'MISSING',
-    VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN ? '***' : 'MISSING'
+    VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY ? '***' + env.VITE_FIREBASE_API_KEY.slice(-4) : 'MISSING',
+    VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN || 'MISSING',
+    VITE_FIREBASE_PROJECT_ID: env.VITE_FIREBASE_PROJECT_ID || 'MISSING'
   });
-  
+
   return {
     base: '/',
     build: {
@@ -45,9 +43,6 @@ export default defineConfig(({ mode }) => {
       },
       commonjsOptions: {
         transformMixedEsModules: true
-      },
-      dynamicImportVarsOptions: {
-        exclude: []
       }
     },
     server: {
@@ -61,17 +56,8 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api/, '')
         }
       } : undefined,
-      cors: !isProduction ? {
-        origin: true,
-        credentials: true
-      } : undefined,
-      hmr: !isProduction ? {
-        overlay: true
-      } : undefined
-    },
-    envPrefix: 'VITE_',
-    esbuild: {
-      drop: isProduction ? ['console', 'debugger'] : []
+      cors: !isProduction,
+      hmr: !isProduction
     },
     define: {
       'process.env': {}
