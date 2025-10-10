@@ -1,31 +1,35 @@
 // This script is used by Vercel to build the application
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 console.log('Running vercel-build.js...');
 
 // Ensure the API directory exists in the build output
-const apiDir = path.join(__dirname, 'api');
-const distApiDir = path.join(__dirname, 'dist/api');
+const apiDir = join(__dirname, 'api');
+const distApiDir = join(__dirname, 'dist/api');
 
-if (!fs.existsSync(distApiDir)) {
-  fs.mkdirSync(distApiDir, { recursive: true });
+if (!existsSync(distApiDir)) {
+  mkdirSync(distApiDir, { recursive: true });
 }
 
 // Copy all API files to the dist directory
-if (fs.existsSync(apiDir)) {
+if (existsSync(apiDir)) {
   console.log('Copying API files...');
-  const files = fs.readdirSync(apiDir);
+  const files = readdirSync(apiDir);
   
-  files.forEach(file => {
+  for (const file of files) {
     if (file.endsWith('.js') || file.endsWith('.mjs')) {
-      const srcPath = path.join(apiDir, file);
-      const destPath = path.join(distApiDir, file);
-      fs.copyFileSync(srcPath, destPath);
+      const srcPath = join(apiDir, file);
+      const destPath = join(distApiDir, file);
+      copyFileSync(srcPath, destPath);
       console.log(`Copied ${file} to ${destPath}`);
     }
-  });
+  }
 }
 
 // Run Prisma generate
@@ -49,4 +53,3 @@ try {
 }
 
 console.log('Build completed successfully');
-
