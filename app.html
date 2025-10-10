@@ -425,7 +425,7 @@
             getAuth, 
             signOut as firebaseSignOut,
             onAuthStateChanged
-        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
+        } from 'firebase/auth';
         
         // Import Firebase config from src/firebase/config.js
         let firebaseConfig = {};
@@ -439,8 +439,11 @@
         }
         
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        
+        // Export auth for other modules if needed
+        window.auth = auth;
         
         console.log('Firebase initialized with config:', {
             ...firebaseConfig,

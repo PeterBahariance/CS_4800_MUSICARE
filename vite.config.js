@@ -3,12 +3,9 @@ import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
-  // Load environment variables - only VITE_ prefixed ones are exposed to client
-  const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
   
   return {
-    // Use relative paths for production
     base: isProduction ? '/' : '/',
     build: {
       outDir: 'dist',
@@ -26,70 +23,41 @@ export default defineConfig(({ mode }) => {
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
-          // Ensure proper module loading in production
           format: 'esm',
-          // This ensures proper path resolution in the built files
-          paths: (id) => {
-            // Handle any path remapping if needed
-            return id;
+          manualChunks: {
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            vendor: ['@prisma/client']
           }
         },
-        // Ensure proper handling of external dependencies
         external: []
       },
-      // Ensure proper module resolution
       commonjsOptions: {
         transformMixedEsModules: true
       },
-      // Enable dynamic imports for code splitting
       dynamicImportVarsOptions: {
         exclude: []
-      },
-      // Optimize dependencies
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            // Split vendor and app code
-            vendor: ['firebase', 'firebase/auth', 'firebase/firestore'],
-            app: ['./src/main.js']
-          }
-        }
       }
     },
     server: {
       port: 5173,
       open: true,
-      // Only configure proxy in development
-      proxy: !isProduction ? {
+      proxy: !isProduction && {
         '/api': {
           target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, ''),
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.error('Proxy error:', err);
-            });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Proxying request:', req.method, req.url);
-            });
-          }
+          rewrite: (path) => path.replace(/^\/api/, '')
         }
-      } : undefined,
-      // Enable CORS in development
-      cors: !isProduction ? {
+      },
+      cors: !isProduction && {
         origin: true,
         credentials: true
-      } : false,
-      // Enable HMR (Hot Module Replacement)
-      hmr: !isProduction ? {
+      },
+      hmr: !isProduction && {
         overlay: true
-      } : false
+      }
     },
-    // Only expose environment variables that start with VITE_ to the client
     envPrefix: 'VITE_',
-    
-    // Configure esbuild for production builds
     esbuild: {
       drop: isProduction ? ['console', 'debugger'] : []
     }

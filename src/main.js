@@ -4,16 +4,20 @@ import {
   getAuth, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut
 } from 'firebase/auth';
 import { firebaseConfig } from './firebase/config';
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+
+// Export Firebase services
+export { auth, firebaseSignOut };
 
 // For debugging
-console.log('Firebase initialized:', !!app);
+console.log('Firebase initialized:', !!firebaseApp);
 console.log('Auth service:', auth);
 console.log('Vite present?', typeof import.meta !== 'undefined' && !!import.meta.env?.BASE_URL);
 
