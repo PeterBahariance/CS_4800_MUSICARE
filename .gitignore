@@ -27,4 +27,5 @@ build/
 .env*.local
 
 firebase-config.js
+firebase-config.local.js
 
