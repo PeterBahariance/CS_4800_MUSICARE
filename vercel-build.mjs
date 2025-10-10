@@ -1,11 +1,13 @@
 // This script is used by Vercel to build the application
-import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync, readdirSync, copyFileSync, statSync } from 'fs';
-import * as fs from 'fs';
+import { existsSync, mkdirSync, readdirSync, copyFileSync, statSync, writeFileSync } from 'fs';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 
-console.log('Running vercel-build.mjs...');
+const execAsync = promisify(exec);
+
+console.log('Starting Vercel build process...');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,14 +16,12 @@ const __dirname = dirname(__filename);
 const apiDir = join(__dirname, 'api');
 const distApiDir = join(__dirname, 'dist/api');
 
-if (!existsSync(distApiDir)) {
-  mkdirSync(distApiDir, { recursive: true });
-}
-
 // Function to copy files and directories recursively
 function copyRecursiveSync(src, dest) {
-  const stats = existsSync(src) && fs.statSync(src);
-  const isDirectory = stats && stats.isDirectory();
+  if (!existsSync(src)) return;
+  
+  const stats = statSync(src);
+  const isDirectory = stats.isDirectory();
 
   if (isDirectory) {
     if (!existsSync(dest)) {
@@ -36,18 +36,55 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-// Copy all API files to the dist directory
-if (existsSync(apiDir)) {
-  console.log('Copying API files...');
-  const items = readdirSync(apiDir);
-  
-  for (const item of items) {
-    const srcPath = join(apiDir, item);
-    const destPath = join(distApiDir, item);
-    console.log(`Copying ${srcPath} to ${destPath}`);
-    copyRecursiveSync(srcPath, destPath);
+// Create firebase-config.js from environment variables
+function createFirebaseConfig() {
+  const firebaseConfigPath = join(__dirname, 'firebase-config.js');
+  const firebaseConfigContent = `// Auto-generated during build
+export const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID,
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
+};`;
+
+  writeFileSync(firebaseConfigPath, firebaseConfigContent);
+  console.log('Created firebase-config.js');
+}
+
+// Main build function
+async function build() {
+  try {
+    console.log('Installing dependencies...');
+    await execAsync('npm install');
+
+    console.log('Generating Prisma client...');
+    await execAsync('npx prisma generate');
+
+    // Create firebase config
+    createFirebaseConfig();
+
+    console.log('Building the application...');
+    await execAsync('npm run build');
+
+    // Copy API files to dist directory
+    if (existsSync(apiDir)) {
+      console.log('Copying API files...');
+      copyRecursiveSync(apiDir, distApiDir);
+    }
+
+    console.log('Build completed successfully!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Build failed:', error);
+    process.exit(1);
   }
 }
+
+// Run the build process
+build();
 
 // Create firebase-config.js from environment variables
 const firebaseConfigPath = join(__dirname, 'firebase-config.js');
@@ -55,7 +92,6 @@ const firebaseConfigContent = `// Auto-generated during build
 export const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.FIREBASE_APP_ID

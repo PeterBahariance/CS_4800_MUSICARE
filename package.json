@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "vite build --mode production",
+    "preview": "vite preview --port 3000",
     "dev:express": "node dev-server.js",
     "vercel-build": "node vercel-build.mjs",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "music",
