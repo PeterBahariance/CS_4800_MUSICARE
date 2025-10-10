@@ -179,10 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRedirecting = false;
     
     onAuthStateChanged(auth, (user) => {
-        if (user && !isRedirecting && !window.location.pathname.endsWith('app.html')) {
+        const currentPath = window.location.pathname;
+        const isOnAuthPage = currentPath.endsWith('index.html') || 
+                           currentPath.endsWith('signup.html') || 
+                           currentPath === '/';
+        
+        if (user && !isRedirecting && isOnAuthPage) {
             isRedirecting = true;
             console.log('User is logged in, redirecting to app.html');
             window.location.href = 'app.html';
+        } else if (!user && currentPath.endsWith('app.html')) {
+            // If user is not logged in and trying to access app.html, redirect to login
+            window.location.href = 'index.html';
         }
     });
 });
