@@ -8,7 +8,7 @@
     "dev:vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "vercel-build": "node vercel-build.js",
+    "vercel-build": "node vercel-build.mjs",
     "db:generate": "prisma generate",
     "db:push": "prisma db push"
   },
