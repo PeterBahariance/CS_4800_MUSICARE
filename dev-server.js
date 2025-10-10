@@ -1,20 +1,29 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { config } from 'dotenv';
 
-// Set DATABASE_URL for local development if not already set
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/musicare_dev';
-}
+// Load environment variables from .env.local
+config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env.local') });
 
-import mockFilesHandler from './api/mock-files.js';
-import mockPeopleHandler from './api/mock-people.js';
-
+// Set up __filename and __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Verify DATABASE_URL is set
+if (!process.env.DATABASE_URL) {
+  console.error('Error: DATABASE_URL is not set in environment variables');
+  process.exit(1);
+}
+
+// Rest of your imports
+import mockFilesHandler from './api/mock-files.js';
+import mockPeopleHandler from './api/mock-people.js';
+
 const app = express();
 const PORT = 3000;
+
+// Rest of your server setup...
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -35,6 +44,17 @@ app.all('/api/people', async (req, res) => {
     await mockPeopleHandler(req, res);
   } catch (error) {
     console.error('People API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import and use the users API handler
+import usersHandler from './api/users/index.js';
+app.all('/api/users', async (req, res) => {
+  try {
+    await usersHandler(req, res);
+  } catch (error) {
+    console.error('Users API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musicare - Music for Health</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>Musicare</h3>
+            <div id="user-info" style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
+                <div>Signed in as:</div>
+                <div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
+            </div>
+            <div class="github-link">
+                <a href="https://github.com/PeterBahariance/CS_4800_MUSICARE" target="_blank" rel="noopener noreferrer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-item" data-tab="about">
+                <span class="nav-icon">ℹ️</span>
+                <span class="nav-text">About</span>
+            </div>
+            <div class="nav-item" data-tab="staff">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Team</span>
+            </div>
+            <div class="nav-item" data-tab="docs">
+                <span class="nav-icon">📚</span>
+                <span class="nav-text">Docs</span>
+            </div>
+            <div class="nav-item" data-tab="sprints">
+                <span class="nav-icon">🏃‍♂️</span>
+                <span class="nav-text">Sprints</span>
+            </div>
+            <div class="nav-item" data-tab="dailies">
+                <span class="nav-icon">📅</span>
+                <span class="nav-text">Standups</span>
+            </div>
+            <div class="nav-item" data-tab="report">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Reports</span>
+            </div>
+            <div class="nav-item" data-tab="database">
+                <span class="nav-icon">🗄️</span>
+                <span class="nav-text">Database Demo</span>
+            </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
+                </div>
+                <div class="nav-item" id="sign-out-btn" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Sign Out</span>
+                </div>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="welcome-message">
+            <h1>Welcome to Musicare</h1>
+            <p>Music curated for your mood and well-being</p>
+            <div class="subtitle">Click on the sidebar items to explore</div>
+        </div>
+        
+        <!-- Music Playlists Mockup -->
+        <div class="playlists-container">
+            <div class="playlists-header">
+                <h2>Therapeutic Playlists</h2>
+                <p class="disclaimer">*Mockup for documentation purposes - Non-functional player interface</p>
+            </div>
+            
+            <div class="playlists-grid">
+                <!-- Anxiety Relief Playlist -->
+                <div class="playlist-card">
+                    <div class="playlist-cover">
+                        <div class="cover-gradient anxiety"></div>
+                        <div class="play-button">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="playlist-info">
+                        <h3>Anxiety Relief</h3>
+                        <p>Calming melodies to ease tension</p>
+                        <div class="playlist-stats">12 songs • 45 min</div>
+                    </div>
+                    <div class="playlist-tracks">
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Weightless</div>
+                                <div class="track-artist">Marconi Union</div>
+                            </div>
+                            <div class="track-duration">8:10</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Clair de Lune</div>
+                                <div class="track-artist">Claude Debussy</div>
+                            </div>
+                            <div class="track-duration">4:42</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Spiegel im Spiegel</div>
+                                <div class="track-artist">Arvo Pärt</div>
+                            </div>
+                            <div class="track-duration">6:25</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">River</div>
+                                <div class="track-artist">Emilie Simon</div>
+                            </div>
+                            <div class="track-duration">3:48</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Focus & Concentration Playlist -->
+                <div class="playlist-card">
+                    <div class="playlist-cover">
+                        <div class="cover-gradient focus"></div>
+                        <div class="play-button">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="playlist-info">
+                        <h3>Focus & Concentration</h3>
+                        <p>Enhance productivity and mental clarity</p>
+                        <div class="playlist-stats">15 songs • 62 min</div>
+                    </div>
+                    <div class="playlist-tracks">
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Music for Airports</div>
+                                <div class="track-artist">Brian Eno</div>
+                            </div>
+                            <div class="track-duration">17:20</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Metamorphosis Two</div>
+                                <div class="track-artist">Philip Glass</div>
+                            </div>
+                            <div class="track-duration">5:31</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Avril 14th</div>
+                                <div class="track-artist">Aphex Twin</div>
+                            </div>
+                            <div class="track-duration">2:05</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Gymnopédie No. 1</div>
+                                <div class="track-artist">Erik Satie</div>
+                            </div>
+                            <div class="track-duration">3:32</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sleep & Relaxation Playlist -->
+                <div class="playlist-card">
+                    <div class="playlist-cover">
+                        <div class="cover-gradient sleep"></div>
+                        <div class="play-button">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="playlist-info">
+                        <h3>Sleep & Relaxation</h3>
+                        <p>Gentle sounds for peaceful rest</p>
+                        <div class="playlist-stats">10 songs • 78 min</div>
+                    </div>
+                    <div class="playlist-tracks">
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Sleep Baby Sleep</div>
+                                <div class="track-artist">Broods</div>
+                            </div>
+                            <div class="track-duration">4:12</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Moonlight Sonata</div>
+                                <div class="track-artist">Ludwig van Beethoven</div>
+                            </div>
+                            <div class="track-duration">15:28</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">Porcelain</div>
+                                <div class="track-artist">Moby</div>
+                            </div>
+                            <div class="track-duration">4:01</div>
+                        </div>
+                        <div class="track">
+                            <div class="track-info">
+                                <div class="track-name">La Valse d'Amélie</div>
+                                <div class="track-artist">Yann Tiersen</div>
+                            </div>
+                            <div class="track-duration">2:15</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Music Player Mockup -->
+            <div class="music-player">
+                <div class="player-track-info">
+                    <div class="track-cover">
+                        <div class="mini-cover anxiety"></div>
+                    </div>
+                    <div class="current-track">
+                        <div class="current-track-name">Weightless</div>
+                        <div class="current-track-artist">Marconi Union</div>
+                    </div>
+                </div>
+                
+                <div class="player-controls">
+                    <button class="control-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn play-pause">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="player-progress">
+                    <div class="progress-time">2:34</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 31%;"></div>
+                    </div>
+                    <div class="progress-time">8:10</div>
+                </div>
+                
+                <div class="player-volume">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    <div class="volume-bar">
+                        <div class="volume-fill" style="width: 65%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Modal -->
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2 id="popup-title">Section Title</h2>
+                <button class="close-btn" id="close-popup">&times;</button>
+            </div>
+            <div class="popup-body" id="popup-body">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden content templates -->
+    <div class="content-templates" style="display: none;">
+        <div id="about-content">
+            <div class="section-content">
+                <p>Learn more about Musicare and our mission to provide music for health and well-being.</p>
+                <div class="feature-list">
+                    <h3>Our Mission</h3>
+                    <ul>
+                        <li>Curate music for therapeutic purposes</li>
+                        <li>Support mental health through sound</li>
+                        <li>Create personalized wellness experiences</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="staff-content">
+            <div class="section-content">
+                <p>Meet the talented individuals behind Musicare.</p>
+                <div class="team-grid">
+                    <div class="team-member">
+                        <h4>Development Team</h4>
+                        <p>Passionate developers creating innovative music therapy solutions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="docs-content">
+            <div class="section-content">
+                <p>Access project documentation, guides, and technical specifications.</p>
+                
+                <div class="file-upload-section">
+                    <h3>Upload Documentation</h3>
+                    <div class="file-upload-area" data-section="docs">
+                        <div class="upload-icon">📚</div>
+                        <p>Drop your .txt or .pdf files here or click to browse</p>
+                        <input type="file" id="docs-file" accept=".txt,.pdf" multiple>
+                        <button class="upload-btn" onclick="document.getElementById('docs-file').click()">Choose Files</button>
+                    </div>
+                    <div class="uploaded-files" id="docs-files"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="sprints-content">
+            <div class="section-content">
+                <p>Track our development progress through sprint planning and retrospectives.</p>
+                
+                <div class="file-upload-section">
+                    <h3>Upload Sprint Documents</h3>
+                    <div class="file-upload-area" data-section="sprints">
+                        <div class="upload-icon">🏃‍♂️</div>
+                        <p>Drop your .txt or .pdf files here or click to browse</p>
+                        <input type="file" id="sprints-file" accept=".txt,.pdf" multiple>
+                        <button class="upload-btn" onclick="document.getElementById('sprints-file').click()">Choose Files</button>
+                    </div>
+                    <div class="uploaded-files" id="sprints-files"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="dailies-content">
+            <div class="section-content">
+                <p>Daily team check-ins, blockers, and progress updates.</p>
+                
+                <div class="file-upload-section">
+                    <h3>Upload Standup Notes</h3>
+                    <div class="file-upload-area" data-section="dailies">
+                        <div class="upload-icon">📅</div>
+                        <p>Drop your .txt or .pdf files here or click to browse</p>
+                        <input type="file" id="dailies-file" accept=".txt,.pdf" multiple>
+                        <button class="upload-btn" onclick="document.getElementById('dailies-file').click()">Choose Files</button>
+                    </div>
+                    <div class="uploaded-files" id="dailies-files"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="report-content">
+            <div class="section-content">
+                <p>Comprehensive project reports, analysis, and final deliverables.</p>
+
+                <div class="file-upload-section">
+                    <h3>Upload Project Reports</h3>
+                    <div class="file-upload-area" data-section="report">
+                        <div class="upload-icon">📊</div>
+                        <p>Drop your .txt or .pdf files here or click to browse</p>
+                        <input type="file" id="report-file" accept=".txt,.pdf" multiple>
+                        <button class="upload-btn" onclick="document.getElementById('report-file').click()">Choose Files</button>
+                    </div>
+                    <div class="uploaded-files" id="report-files"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="database-content">
+            <div class="section-content">
+                <p>Demonstrate basic database connectivity using Prisma and PostgreSQL.</p>
+
+                <div class="database-demo-section">
+                    <h3>People Table Demo</h3>
+                    <p>This demo shows a simple People table with 3 attributes: ID, First Name, and Last Name.</p>
+
+                    <div class="demo-controls">
+                        <button id="populate-db-btn" class="populate-btn">Populate Database</button>
+                        <button id="refresh-data-btn" class="refresh-btn">Refresh Data</button>
+                        <button id="clear-db-btn" class="clear-btn">Clear Database</button>
+                    </div>
+
+                    <div class="database-status" id="db-status">
+                        <p>Click "Populate Database" to add sample data to the People table.</p>
+                    </div>
+
+                    <div class="people-table-container" id="people-table-container" style="display: none;">
+                        <h4>People in Database:</h4>
+                        <table class="people-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="people-table-body">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        // Import Firebase modules through Vite
+        import { initializeApp } from 'firebase/app';
+        import { 
+            getAuth, 
+            signOut as firebaseSignOut,
+            onAuthStateChanged
+        } from 'firebase/auth';
+        
+        // Import Firebase config from src/firebase/config.js
+        let firebaseConfig = {};
+        try {
+            const { firebaseConfig: config } = await import('/src/firebase/config.js');
+            firebaseConfig = config;
+            console.log('Firebase config loaded successfully');
+        } catch (error) {
+            console.error('Error loading Firebase config:', error);
+            alert('Error: Failed to load Firebase configuration. The app may not work correctly.');
+        }
+        
+        // Initialize Firebase
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        
+        // Export auth for other modules if needed
+        window.auth = auth;
+        
+        console.log('Firebase initialized with config:', {
+            ...firebaseConfig,
+            apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
+        });
+        
+        // Update UI based on auth state
+        onAuthStateChanged(auth, (user) => {
+            const userInfo = document.getElementById('user-info');
+            const userEmail = document.getElementById('user-email');
+            
+            if (user) {
+                // User is signed in
+                userEmail.textContent = user.email;
+                userInfo.style.display = 'block';
+            } else {
+                // User is signed out
+                userInfo.style.display = 'none';
+            }
+        });
+        
+        // Function to show a confirmation dialog
+        function showConfirmationDialog(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                overlay.style.display = 'flex';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '1000';
+
+                const dialog = document.createElement('div');
+                dialog.style.backgroundColor = 'white';
+                dialog.style.padding = '20px';
+                dialog.style.borderRadius = '8px';
+                dialog.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                dialog.style.maxWidth = '400px';
+                dialog.style.width = '80%';
+                dialog.style.textAlign = 'center';
+
+                dialog.innerHTML = `
+                    <h3 style="margin-top: 0; color: #333;">${message}</h3>
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                        <button id="confirm-yes" style="padding: 8px 20px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Yes, Sign Out</button>
+                        <button id="confirm-no" style="padding: 8px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    </div>
+                `;
+
+                overlay.appendChild(dialog);
+                document.body.appendChild(overlay);
+
+                // Handle button clicks
+                document.getElementById('confirm-yes').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                });
+
+                document.getElementById('confirm-no').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                });
+            });
+        }
+
+        // Function to show a loading indicator
+        function showLoading(message) {
+            const loading = document.createElement('div');
+            loading.id = 'loading-indicator';
+            loading.style.position = 'fixed';
+            loading.style.top = '0';
+            loading.style.left = '0';
+            loading.style.width = '100%';
+            loading.style.height = '100%';
+            loading.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            loading.style.display = 'flex';
+            loading.style.flexDirection = 'column';
+            loading.style.justifyContent = 'center';
+            loading.style.alignItems = 'center';
+            loading.style.zIndex = '1000';
+            loading.style.color = 'white';
+            loading.innerHTML = `
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
+                <p>${message}</p>
+            `;
+            document.body.appendChild(loading);
+        }
+
+        // Add click event listener to sign out button
+        document.getElementById('sign-out-btn').addEventListener('click', async () => {
+            const confirm = await showConfirmationDialog('Are you sure you want to sign out?');
+            
+            if (confirm) {
+                showLoading('Signing out...');
+                try {
+                    await firebaseSignOut(auth);
+                    // Small delay to show the loading indicator
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                    document.body.removeChild(document.getElementById('loading-indicator'));
+                    alert('Error signing out. Please try again.');
+                }
+            }
+        });
+    </script>
+    <!-- Load the main app script as a module -->
+    <script type="module" src="/src/app.js"></script>
+</body>
+</html>
+
