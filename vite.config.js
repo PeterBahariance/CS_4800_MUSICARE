@@ -3,19 +3,22 @@ import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
-  // Load env variables based on current mode
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  // Determine if we're in production mode
   const isProduction = mode === 'production';
   
-  // Log loaded environment variables (for debugging)
-  console.log('Vite Config - Environment Variables:', {
-    FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY ? '***' : 'MISSING',
-    FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN ? '***' : 'MISSING',
-    FIREBASE_PROJECT_ID: env.VITE_FIREBASE_PROJECT_ID ? '***' : 'MISSING',
+  // Load all environment variables
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  
+  // Log environment variables for debugging
+  console.log('Vite Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    MODE: mode,
+    VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY ? '***' : 'MISSING',
+    VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN ? '***' : 'MISSING'
   });
   
   return {
-    base: isProduction ? '/' : '/',
+    base: '/',
     build: {
       outDir: 'dist',
       emptyOutDir: true,
@@ -50,25 +53,28 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       open: true,
-      proxy: !isProduction && {
+      proxy: !isProduction ? {
         '/api': {
           target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, '')
         }
-      },
-      cors: !isProduction && {
+      } : undefined,
+      cors: !isProduction ? {
         origin: true,
         credentials: true
-      },
-      hmr: !isProduction && {
+      } : undefined,
+      hmr: !isProduction ? {
         overlay: true
-      }
+      } : undefined
     },
     envPrefix: 'VITE_',
     esbuild: {
       drop: isProduction ? ['console', 'debugger'] : []
+    },
+    define: {
+      'process.env': {}
     }
   };
 });
