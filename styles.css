@@ -92,11 +92,70 @@ a:visited {
     cursor: pointer;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
+    user-select: none;
 }
 
 .nav-item:hover {
     background: rgba(255, 255, 255, 0.1);
     border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-left-color: white;
+    font-weight: 500;
+}
+
+.nav-item.active .nav-icon {
+    transform: scale(1.1);
+}
+
+.nav-icon {
+    margin-right: 10px;
+    transition: transform 0.2s ease;
+}
+
+.nav-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Content sections */
+.content-section {
+    display: none;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin: 20px 0;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Welcome message styles */
+.welcome-message {
+    text-align: center;
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eff9 100%);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.welcome-message h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.welcome-message .subtitle {
+    color: var(--text-light);
+    font-size: 1.1rem;
+    margin-top: 10px;
 }
 
 .nav-item.active {

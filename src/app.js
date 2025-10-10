@@ -44,13 +44,66 @@ async function handleSignOut() {
 
 // Tab navigation
 const navItems = document.querySelectorAll('.nav-item[data-tab]');
+let currentTab = null;
+
+function showTab(tabId) {
+  // Hide all content sections
+  document.querySelectorAll('.content-section').forEach(section => {
+    section.style.display = 'none';
+  });
+  
+  // Remove active class from all nav items
+  navItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Show the selected tab content
+  const contentSection = document.getElementById(`${tabId}-content`);
+  if (contentSection) {
+    contentSection.style.display = 'block';
+  } else {
+    // If content section doesn't exist, try to get it from the templates
+    const template = document.querySelector(`.content-templates #${tabId}-content`);
+    if (template) {
+      const content = template.cloneNode(true);
+      content.id = `${tabId}-content`;
+      content.className = 'content-section';
+      document.querySelector('.main-content').appendChild(content);
+      content.style.display = 'block';
+    }
+  }
+  
+  // Add active class to clicked nav item
+  const activeNavItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+  if (activeNavItem) {
+    activeNavItem.classList.add('active');
+  }
+  
+  currentTab = tabId;
+}
+
+// Initialize tab navigation
 navItems.forEach(item => {
-  item.addEventListener('click', () => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
     const tabId = item.getAttribute('data-tab');
-    // Handle tab switching logic here
-    console.log(`Switching to tab: ${tabId}`);
+    showTab(tabId);
+    
+    // Update URL without reloading the page
+    window.history.pushState({ tab: tabId }, '', `?tab=${tabId}`);
   });
 });
+
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+  const tabId = e.state?.tab || 'about';
+  showTab(tabId);
+});
+
+// Show initial tab from URL or default to 'about'
+const urlParams = new URLSearchParams(window.location.search);
+const initialTab = urlParams.get('tab') || 'about';
+showTab(initialTab);
 
 // Initialize any other app-specific functionality here
 console.log('App initialized');
