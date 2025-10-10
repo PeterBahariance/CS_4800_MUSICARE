@@ -1,5 +1,5 @@
 // src/firebase/config.js
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -9,9 +9,23 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Add debug logging
-console.log('Firebase Config Loaded:', {
-  apiKey: firebaseConfig.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'MISSING',
-  authDomain: firebaseConfig.authDomain || 'MISSING',
-  projectId: firebaseConfig.projectId || 'MISSING'
-});
+// Validate required configuration
+const requiredConfig = ['apiKey', 'authDomain', 'projectId'];
+for (const key of requiredConfig) {
+  if (!firebaseConfig[key]) {
+    console.error(`Missing required Firebase config: ${key}`);
+    if (import.meta.env.DEV) {
+      console.error('Make sure you have a .env.local file with the correct Firebase configuration');
+    }
+  }
+}
+
+// Debug log (only in development)
+if (import.meta.env.DEV) {
+  console.log('Firebase Config:', {
+    ...firebaseConfig,
+    apiKey: firebaseConfig.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'MISSING'
+  });
+}
+
+export { firebaseConfig };
