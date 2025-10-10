@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       emptyOutDir: true,
       target: 'esnext',
-      minify: isProduction ? 'terser' : false,
+      minify: isProduction ? 'esbuild' : false,
       sourcemap: !isProduction,
       rollupOptions: {
         input: {
@@ -44,6 +44,16 @@ export default defineConfig(({ mode }) => {
       // Enable dynamic imports for code splitting
       dynamicImportVarsOptions: {
         exclude: []
+      },
+      // Optimize dependencies
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor and app code
+            vendor: ['firebase', 'firebase/auth', 'firebase/firestore'],
+            app: ['./src/main.js']
+          }
+        }
       }
     },
     server: {
@@ -77,6 +87,11 @@ export default defineConfig(({ mode }) => {
       } : false
     },
     // Only expose environment variables that start with VITE_ to the client
-    envPrefix: 'VITE_'
+    envPrefix: 'VITE_',
+    
+    // Configure esbuild for production builds
+    esbuild: {
+      drop: isProduction ? ['console', 'debugger'] : []
+    }
   };
 });
