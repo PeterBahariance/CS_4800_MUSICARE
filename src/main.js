@@ -33,20 +33,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
     const signupContainer = document.getElementById('signup-container');
     
-    // Toggle between login and signup forms
-    if (showSignupLink && loginContainer && signupContainer) {
+    // Handle signup link - allow default navigation to signup.html
+    if (showSignupLink) {
         showSignupLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginContainer.style.display = 'none';
-            signupContainer.style.display = 'block';
+            console.log('Navigating to signup page');
+            // Let the default link behavior handle the navigation
         });
     }
 
+    // Keep the login form toggle if needed, but remove preventDefault
     if (showLoginLink && loginContainer && signupContainer) {
         showLoginLink.addEventListener('click', (e) => {
             e.preventDefault();
-            signupContainer.style.display = 'none';
-            loginContainer.style.display = 'block';
+            if (signupContainer) signupContainer.style.display = 'none';
+            if (loginContainer) loginContainer.style.display = 'block';
         });
     }
 
