@@ -3,7 +3,16 @@ import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
+  // Load env variables based on current mode
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
   const isProduction = mode === 'production';
+  
+  // Log loaded environment variables (for debugging)
+  console.log('Vite Config - Environment Variables:', {
+    FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY ? '***' : 'MISSING',
+    FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN ? '***' : 'MISSING',
+    FIREBASE_PROJECT_ID: env.VITE_FIREBASE_PROJECT_ID ? '***' : 'MISSING',
+  });
   
   return {
     base: isProduction ? '/' : '/',
