@@ -26,5 +26,5 @@ build/
 .vercel
 .env*.local
 
-# Firebase config
-src/firebase/firebase-config.js
+firebase-config.js
+

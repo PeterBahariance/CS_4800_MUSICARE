@@ -229,16 +229,34 @@
             onAuthStateChanged as firebaseOnAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
 
-        // Initialize Firebase with config from Vite
-        const firebaseConfig = import.meta.env.VITE_FIREBASE_CONFIG;
-        if (!firebaseConfig || !firebaseConfig.apiKey) {
-            console.error('Firebase configuration is missing or invalid');
-            // Show error to user
+        // Import Firebase config from the correct path
+        let firebaseConfig = {};
+        try {
+            // Import the config module from the public directory
+            const configModule = await import('/firebase-config.js');
+            if (configModule && configModule.firebaseConfig) {
+                firebaseConfig = configModule.firebaseConfig;
+                console.log('Firebase config loaded successfully');
+            } else {
+                throw new Error('Firebase config not found in module');
+            }
+        } catch (error) {
+            console.error('Error loading Firebase config:', error);
             const errorElement = document.getElementById('signup-error');
             if (errorElement) {
-                errorElement.textContent = 'Error: Firebase configuration is missing. Please contact support.';
+                errorElement.textContent = 'Error: Failed to load Firebase configuration. Please refresh the page or contact support.';
                 errorElement.style.display = 'block';
             }
+            
+            // Set default empty config to prevent further errors
+            firebaseConfig = {
+                apiKey: "",
+                authDomain: "",
+                projectId: "",
+                storageBucket: "",
+                messagingSenderId: "",
+                appId: ""
+            };
         }
         
         const app = initializeApp(firebaseConfig);

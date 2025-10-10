@@ -331,74 +331,58 @@
     
     <!-- Firebase and other scripts -->
     <script type="module">
-        // Import Firebase modules from CDN
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword,
-            onAuthStateChanged as firebaseOnAuthStateChanged
-        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
-
-        // Initialize Firebase with config from Vite
-        const firebaseConfig = import.meta.env.VITE_FIREBASE_CONFIG;
-        if (!firebaseConfig || !firebaseConfig.apiKey) {
-            console.error('Firebase configuration is missing or invalid');
-            // Show error to user
-            const errorElement = document.getElementById('error-message');
-            if (errorElement) {
-                errorElement.textContent = 'Error: Firebase configuration is missing. Please contact support.';
-                errorElement.style.display = 'block';
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+    import { 
+        getAuth, 
+        createUserWithEmailAndPassword, 
+        signInWithEmailAndPassword,
+        onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
+    import { firebaseConfig } from './firebase-config.js';
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    
+    // Make auth available globally for debugging
+    window.auth = auth;
+    
+    // Auth state observer
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log('User is signed in:', user.email);
+            if (!window.location.pathname.includes('app.html')) {
+                window.location.href = 'app.html';
             }
+        } else {
+            console.log('No user is signed in');
         }
-
-        // Debug log to check if Firebase config is loaded
-        console.log('Firebase config loaded:', {
-            ...firebaseConfig,
-            apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
-        });
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Make auth available globally for debugging (optional)
-        window.auth = auth;
-        
-        // Auth functions
-        async function signUp(email, password) {
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                return { user: userCredential.user, error: null };
-            } catch (error) {
-                console.log('Signup error in signUp function:', error);
-                // Return the entire error object to preserve error code
-                return { user: null, error };
-            }
+    });
+    
+    // Auth functions
+    async function signUp(email, password) {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            return { user: userCredential.user, error: null };
+        } catch (error) {
+            console.error('Signup error:', error);
+            return { user: null, error };
         }
+    }
 
-        async function signIn(email, password) {
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                return { user: userCredential.user, error: null };
-            } catch (error) {
-                return { user: null, error: error.message };
-            }
+    async function signIn(email, password) {
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            return { user: userCredential.user, error: null };
+        } catch (error) {
+            console.error('Sign in error:', error);
+            return { user: null, error };
         }
+    }
 
-        // Set up auth state change listener
-        function setupAuthStateListener() {
-            return firebaseOnAuthStateChanged(auth, (user) => {
-                console.log('Auth state changed:', user ? 'User logged in' : 'No user');
-                if (user && !window.location.pathname.includes('signup.html')) {
-                    // User is signed in, redirect to app
-                    window.location.href = 'app.html';
-                }
-            });
-        }
-        
-        // Initialize auth state listener when the page loads
-        // Handle login form submission
+    // Handle login form submission
+    document.addEventListener('DOMContentLoaded', () => {
         const loginForm = document.getElementById('login-form');
         const showSignupBtn = document.getElementById('show-signup');
         
@@ -536,12 +520,14 @@
                     console.log('User created successfully:', user);
                     // The auth state change listener will handle the redirect
                     
+                    // Re-enable the submit button after successful signup
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
                 } catch (error) {
                     console.error('Signup error:', error);
                     
                     // Map Firebase error codes to user-friendly messages
                     let errorMessage = 'Failed to create account. Please try again.';
-                    
                     // Check if this is a Firebase auth error
                     if (error.code) {
                         console.log('Error code:', error.code);
@@ -586,12 +572,10 @@
                         console.error('Error element not found');
                     }
                     
-                    // Re-enable the submit button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
                 }
             });
         }
-    </script>
+    });
+</script>
 </body>
 </html>
