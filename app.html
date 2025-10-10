@@ -419,18 +419,18 @@
         </div>
     </div>
     <script type="module">
-        // Import Firebase modules from CDN
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+        // Import Firebase modules through Vite
+        import { initializeApp } from 'firebase/app';
         import { 
             getAuth, 
             signOut as firebaseSignOut,
             onAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
         
-        // Import Firebase config from firebase-config.js
+        // Import Firebase config from src/firebase/config.js
         let firebaseConfig = {};
         try {
-            const { firebaseConfig: config } = await import('./firebase-config.js');
+            const { firebaseConfig: config } = await import('/src/firebase/config.js');
             firebaseConfig = config;
             console.log('Firebase config loaded successfully');
         } catch (error) {
@@ -553,6 +553,7 @@
             }
         });
     </script>
-    <script type="module" src="./script.js"></script>
+    <!-- Load the main app script as a module -->
+    <script type="module" src="/src/app.js"></script>
 </body>
 </html>

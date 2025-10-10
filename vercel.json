@@ -9,7 +9,8 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "includeFiles": ["firebase-config.js"]
       }
     }
   ],
@@ -17,10 +18,6 @@
     {
       "src": "/api/(?<path>.*)",
       "dest": "/api/$path"
-    },
-    {
-      "src": "/api",
-      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",

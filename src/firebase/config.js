@@ -1,55 +1,33 @@
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut as firebaseSignOut,
-  onAuthStateChanged as firebaseOnAuthStateChanged
-} from 'firebase/auth';
-
-import { firebaseConfig } from '../../firebase-config';
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// Auth functions
-async function signUp(email, password) {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return { user: userCredential.user, error: null };
-  } catch (error) {
-    return { user: null, error: error.message };
+// src/firebase/config.js
+function readEnv(key) {
+  // Works in Vite context
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const value = import.meta.env[key];
+    if (!value) {
+      console.error(`[Firebase Config] Missing environment variable: ${key}`);
+    }
+    return value;
   }
+  
+  // Fallback for non-Vite contexts
+  console.warn(`[Firebase Config] Running in non-Vite context, using empty string for ${key}`);
+  return '';
 }
 
-async function signIn(email, password) {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return { user: userCredential.user, error: null };
-  } catch (error) {
-    return { user: null, error: error.message };
-  }
-}
-
-async function logOut() {
-  try {
-    await firebaseSignOut(auth);
-    return { error: null };
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-function onAuthStateChanged(callback) {
-  return firebaseOnAuthStateChanged(auth, callback);
-}
-
-// Export the auth functions and auth object
-export { 
-  auth, 
-  signUp, 
-  signIn, 
-  logOut,
-  onAuthStateChanged
+export const firebaseConfig = {
+  apiKey: readEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: readEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: readEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: readEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: readEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: readEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: readEnv('VITE_FIREBASE_MEASUREMENT_ID')
 };
+
+// Debug
+console.log('[Firebase Config] Loaded config:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain
+});
+
+export default firebaseConfig;

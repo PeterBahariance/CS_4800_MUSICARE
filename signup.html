@@ -229,17 +229,12 @@
             onAuthStateChanged as firebaseOnAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
 
-        // Import Firebase config from the correct path
+        // Import Firebase config from src/firebase/config.js
         let firebaseConfig = {};
         try {
-            // Import the config module from the public directory
-            const configModule = await import('/firebase-config.js');
-            if (configModule && configModule.firebaseConfig) {
-                firebaseConfig = configModule.firebaseConfig;
-                console.log('Firebase config loaded successfully');
-            } else {
-                throw new Error('Firebase config not found in module');
-            }
+            const { firebaseConfig: config } = await import('/src/firebase/config.js');
+            firebaseConfig = config;
+            console.log('Firebase config loaded successfully');
         } catch (error) {
             console.error('Error loading Firebase config:', error);
             const errorElement = document.getElementById('signup-error');
