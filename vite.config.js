@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => {
         input: {
           main: resolve(__dirname, 'index.html'),
           notif: resolve(__dirname, 'notif.html'),
-          app: resolve(__dirname, 'app.html')
+          app: resolve(__dirname, 'app.html'),
+          signup: resolve(__dirname, 'signup.html')
         },
         output: {
           entryFileNames: 'assets/[name]-[hash].js',
