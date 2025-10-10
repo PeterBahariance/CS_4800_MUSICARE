@@ -5,8 +5,11 @@ function readEnv(key) {
     const value = import.meta.env[key];
     if (!value) {
       console.error(`[Firebase Config] Missing environment variable: ${key}`);
+    } else {
+      // Log the first few characters of the value for debugging (don't log full API keys)
+      console.log(`[Firebase Config] Loaded ${key}: ${value.substring(0, 5)}...`);
     }
-    return value;
+    return value || '';
   }
   
   // Fallback for non-Vite contexts
