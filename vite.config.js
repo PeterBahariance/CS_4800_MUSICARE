@@ -17,12 +17,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: '/',
+    publicDir: 'public',
     build: {
       outDir: 'dist',
       emptyOutDir: true,
       target: 'esnext',
       minify: isProduction ? 'esbuild' : false,
       sourcemap: !isProduction,
+      assetsInlineLimit: 0, // Ensure all assets are emitted as files
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
