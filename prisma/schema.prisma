@@ -4,10 +4,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Define custom output path for generated Prisma Client
+// Define Prisma Client generator
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/prisma-client"
 }
 
 // File storage model for Musicare
@@ -32,12 +31,21 @@ model People {
   @@map("people")
 }
 
-// User model for authentication
+// User model for Musicare - Music for Health & Wellness
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
-  displayName   String?
+  username      String?   @unique // Unique handle like @username
+  displayName   String?   // Display name shown to others
   emailVerified Boolean   @default(false)
+  
+  // Health & Wellness preferences
+  healthGoals   String[]  @default([]) // e.g., ["mental_wellness", "stress_relief", "sleep_improvement"]
+  musicPreferences String[] @default([]) // Preferred genres
+  dailyListeningGoal Int?  // Minutes per day goal
+  
+  // Metadata
+  timezone      String?
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

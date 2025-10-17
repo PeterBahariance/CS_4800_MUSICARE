@@ -172,24 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('User created:', userCredential.user);
                 
-                // Save additional user data to Firestore or your backend
+                // Save additional user data to Prisma database
                 try {
+                    console.log('Attempting to save user to database:', email);
                     const response = await fetch('/api/users', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            uid: userCredential.user.uid,
                             email,
-                            username,
-                            createdAt: new Date().toISOString()
+                            displayName: username
                         })
                     });
                     
+                    console.log('API Response status:', response.status);
+                    const responseData = await response.json();
+                    console.log('API Response data:', responseData);
+                    
                     if (!response.ok) {
-                        throw new Error('Failed to save user data');
+                        throw new Error('Failed to save user data: ' + (responseData.error || 'Unknown error'));
                     }
+                    
+                    console.log('User successfully saved to database');
                     
                     // Show success message
                     const successMessage = document.createElement('div');
