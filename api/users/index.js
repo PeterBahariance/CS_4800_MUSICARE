@@ -53,7 +53,15 @@ export default async function handler(req, res) {
 
     // Create a new user
     if (req.method === 'POST') {
-      const { email, displayName } = req.body;
+      const { 
+        email, 
+        username,
+        displayName,
+        healthGoals,
+        musicPreferences,
+        dailyListeningGoal,
+        timezone
+      } = req.body;
 
       if (!email) {
         return res.status(400).json({ 
@@ -62,7 +70,7 @@ export default async function handler(req, res) {
       }
 
       try {
-        // Check if user already exists
+        // Check if user already exists by email
         const existingUser = await prisma.user.findUnique({
           where: { email }
         });
@@ -74,12 +82,30 @@ export default async function handler(req, res) {
           });
         }
 
-        // Create new user
+        // Check if username is taken (if provided)
+        if (username) {
+          const existingUsername = await prisma.user.findUnique({
+            where: { username }
+          });
+
+          if (existingUsername) {
+            return res.status(400).json({
+              error: 'Username already taken'
+            });
+          }
+        }
+
+        // Create new user with all fields
         const user = await prisma.user.create({
           data: {
             email,
+            username: username || null,
             displayName: displayName || null,
-            emailVerified: false
+            emailVerified: false,
+            healthGoals: healthGoals || [],
+            musicPreferences: musicPreferences || [],
+            dailyListeningGoal: dailyListeningGoal || null,
+            timezone: timezone || null
           }
         });
 
