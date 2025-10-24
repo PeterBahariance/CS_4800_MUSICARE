@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma.js';
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // Ensure we always return JSON
@@ -39,6 +39,47 @@ export default async function handler(req, res) {
         return res.status(500).json({ 
           error: 'Failed to connect to database',
           details: error.message 
+        });
+      }
+    }
+
+    // Get user by email or Firebase UID
+    if (req.method === 'GET') {
+      const { email, firebaseUid } = req.query;
+
+      if (!email && !firebaseUid) {
+        return res.status(400).json({
+          error: 'Either email or firebaseUid is required'
+        });
+      }
+
+      try {
+        let user = null;
+
+        if (firebaseUid) {
+          // Find user by Firebase UID
+          user = await prisma.user.findUnique({
+            where: { firebaseUid }
+          });
+        } else if (email) {
+          // Find user by email
+          user = await prisma.user.findUnique({
+            where: { email }
+          });
+        }
+
+        if (!user) {
+          return res.status(404).json({
+            error: 'User not found'
+          });
+        }
+
+        return res.status(200).json(user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        return res.status(500).json({
+          error: 'Failed to fetch user',
+          details: error.message
         });
       }
     }
@@ -88,9 +129,39 @@ export default async function handler(req, res) {
       }
     }
 
+    // Update user with Firebase UID
+    if (req.method === 'PATCH') {
+      const { email, firebaseUid } = req.body;
+
+      if (!email || !firebaseUid) {
+        return res.status(400).json({
+          error: 'Both email and firebaseUid are required'
+        });
+      }
+
+      try {
+        // Update user with Firebase UID
+        const user = await prisma.user.update({
+          where: { email },
+          data: { firebaseUid }
+        });
+
+        return res.status(200).json({
+          message: 'User updated successfully',
+          user
+        });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        return res.status(500).json({
+          error: 'Failed to update user',
+          details: error.message
+        });
+      }
+    }
+
     // Handle unsupported methods
-    return res.status(405).json({ 
-      error: 'Method not allowed' 
+    return res.status(405).json({
+      error: 'Method not allowed'
     });
 
   } catch (error) {
