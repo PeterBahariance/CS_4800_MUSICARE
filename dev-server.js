@@ -59,6 +59,28 @@ app.all('/api/users', async (req, res) => {
   }
 });
 
+// Import and use the friends API handler
+import friendsHandler from './api/friends.js';
+app.all('/api/friends', async (req, res) => {
+  try {
+    await friendsHandler(req, res);
+  } catch (error) {
+    console.error('Friends API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import and use the search users API handler
+import searchUsersHandler from './api/search-users.js';
+app.all('/api/search-users', async (req, res) => {
+  try {
+    await searchUsersHandler(req, res);
+  } catch (error) {
+    console.error('Search Users API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all route for serving index.html
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // Ensure we always return JSON
@@ -47,6 +47,81 @@ export default async function handler(req, res) {
         return res.status(500).json({ 
           error: 'Failed to connect to database',
           details: error.message 
+        });
+      }
+    }
+
+    // Get user by email or Firebase UID
+    if (req.method === 'GET') {
+      const { email, firebaseUid } = req.query;
+
+      if (!email && !firebaseUid) {
+        return res.status(400).json({
+          error: 'Either email or firebaseUid is required'
+        });
+      }
+
+      try {
+        let user = null;
+
+        if (firebaseUid) {
+          // Find user by Firebase UID
+          user = await prisma.user.findUnique({
+            where: { firebaseUid }
+          });
+        } else if (email) {
+          // Find user by email
+          user = await prisma.user.findUnique({
+            where: { email }
+          });
+        }
+
+        if (!user) {
+          return res.status(404).json({
+            error: 'User not found'
+          });
+        }
+
+        return res.status(200).json({
+          message: 'User found',
+          user
+        });
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        return res.status(500).json({
+          error: 'Failed to fetch user',
+          details: error.message
+        });
+      }
+    }
+
+    // Update user (PATCH)
+    if (req.method === 'PATCH') {
+      const { id, firebaseUid } = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          error: 'User ID is required'
+        });
+      }
+
+      try {
+        const updatedUser = await prisma.user.update({
+          where: { id },
+          data: {
+            firebaseUid: firebaseUid || undefined
+          }
+        });
+
+        return res.status(200).json({
+          message: 'User updated successfully',
+          user: updatedUser
+        });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        return res.status(500).json({
+          error: 'Failed to update user',
+          details: error.message
         });
       }
     }
