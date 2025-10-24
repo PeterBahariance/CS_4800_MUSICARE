@@ -66,6 +66,29 @@
 
     <!-- Main Content Area -->
     <div class="main-content">
+        <!-- Friend Search and Notifications Bar -->
+        <div class="friend-search-bar" id="friend-search-container" style="display: none;">
+            <div class="search-section">
+                <div class="search-input-container">
+                    <input type="text" id="user-search-input" placeholder="Search users by username, name, or ID..." />
+                    <div class="search-icon">🔍</div>
+                </div>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <div class="notifications-section">
+                <div class="notification-icon" id="friend-requests-icon">
+                    <span class="envelope">✉️</span>
+                    <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                </div>
+            </div>
+            <div class="friends-section">
+                <div class="friends-icon" id="friends-list-icon">
+                    <span class="friends-emoji">👥</span>
+                    <span class="friends-count" id="friends-count">0</span>
+                </div>
+            </div>
+        </div>
+
         <div class="welcome-message">
             <h1>Welcome to Musicare</h1>
             <p>Music curated for your mood and well-being</p>
@@ -556,6 +579,77 @@
             }
         });
     </script>
+
+    <!-- User Profile Popup -->
+    <div class="popup-overlay" id="user-profile-popup">
+        <div class="popup-content user-profile-content">
+            <div class="popup-header">
+                <h3 id="profile-title">User Profile</h3>
+                <button class="close-btn" id="close-profile-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <div class="user-profile-info">
+                    <div class="profile-avatar">
+                        <div class="default-avatar">👤</div>
+                    </div>
+                    <div class="profile-details">
+                        <h4 id="profile-display-name">Loading...</h4>
+                        <p id="profile-username">@username</p>
+                        <p id="profile-email">email@example.com</p>
+
+                        <div class="profile-section">
+                            <h5>Health Goals</h5>
+                            <div id="profile-health-goals" class="tags-container"></div>
+                        </div>
+
+                        <div class="profile-section">
+                            <h5>Music Preferences</h5>
+                            <div id="profile-music-preferences" class="tags-container"></div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button id="add-friend-btn" class="friend-action-btn primary">Add Friend</button>
+                            <button id="cancel-request-btn" class="friend-action-btn secondary" style="display: none;">Cancel Request</button>
+                            <button id="accept-request-btn" class="friend-action-btn success" style="display: none;">Accept Request</button>
+                            <button id="decline-request-btn" class="friend-action-btn danger" style="display: none;">Decline Request</button>
+                            <button id="remove-friend-btn" class="friend-action-btn danger" style="display: none;">Remove Friend</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Friend Requests Popup -->
+    <div class="popup-overlay" id="friend-requests-popup">
+        <div class="popup-content friend-requests-content">
+            <div class="popup-header">
+                <h3>Friend Requests</h3>
+                <button class="close-btn" id="close-requests-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <div id="friend-requests-list">
+                    <p class="loading-message">Loading friend requests...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Friends List Popup -->
+    <div class="popup-overlay" id="friends-list-popup">
+        <div class="popup-content friends-list-content">
+            <div class="popup-header">
+                <h3>My Friends</h3>
+                <button class="close-btn" id="close-friends-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <div id="friends-list">
+                    <p class="loading-message">Loading friends...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Load the main app script as a module -->
     <script type="module" src="/src/app.js"></script>
 </body>
