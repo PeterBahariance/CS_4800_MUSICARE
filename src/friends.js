@@ -314,8 +314,15 @@ class FriendSystem {
     }
 
     showUserProfile(user) {
+        console.log('🔍 FriendSystem: Showing user profile', {
+            user: user,
+            userId: user.id,
+            currentUser: this.currentUser,
+            currentUserId: this.currentUser?.id
+        });
+
         this.currentSelectedUser = user;
-        
+
         // Update profile information
         document.getElementById('profile-display-name').textContent = user.displayName || user.username || 'Unknown User';
         document.getElementById('profile-username').textContent = user.username ? `@${user.username}` : '';
@@ -376,7 +383,20 @@ class FriendSystem {
     }
 
     async sendFriendRequest() {
-        if (!this.currentSelectedUser || !this.currentUser) return;
+        if (!this.currentSelectedUser || !this.currentUser) {
+            console.error('🔍 FriendSystem: Missing user data', {
+                currentUser: this.currentUser,
+                currentSelectedUser: this.currentSelectedUser
+            });
+            return;
+        }
+
+        console.log('🔍 FriendSystem: Sending friend request', {
+            senderId: this.currentUser.id,
+            receiverId: this.currentSelectedUser.id,
+            currentUser: this.currentUser,
+            currentSelectedUser: this.currentSelectedUser
+        });
 
         try {
             const response = await fetch('/api/friends', {
