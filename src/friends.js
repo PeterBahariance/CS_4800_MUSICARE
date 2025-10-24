@@ -41,8 +41,10 @@ class FriendSystem {
             // First try to find by Firebase UID
             let response = await fetch(`/api/users?firebaseUid=${firebaseUid}`);
             if (response.ok) {
-                const userData = await response.json();
-                console.log('🔍 FriendSystem: Found user by Firebase UID:', userData);
+                const data = await response.json();
+                console.log('🔍 FriendSystem: Found user by Firebase UID:', data);
+                // Handle both response formats: direct user object or wrapped in {user: ...}
+                const userData = data.user || data;
                 return userData;
             }
 
@@ -52,8 +54,10 @@ class FriendSystem {
                 console.log('🔍 FriendSystem: Trying fallback search by email:', auth.currentUser.email);
                 response = await fetch(`/api/users?email=${encodeURIComponent(auth.currentUser.email)}`);
                 if (response.ok) {
-                    const userData = await response.json();
-                    console.log('🔍 FriendSystem: Found user by email:', userData);
+                    const data = await response.json();
+                    console.log('🔍 FriendSystem: Found user by email:', data);
+                    // Handle both response formats: direct user object or wrapped in {user: ...}
+                    const userData = data.user || data;
 
                     // Update the user record with Firebase UID for future use
                     if (userData && !userData.firebaseUid) {
@@ -395,7 +399,9 @@ class FriendSystem {
             senderId: this.currentUser.id,
             receiverId: this.currentSelectedUser.id,
             currentUser: this.currentUser,
-            currentSelectedUser: this.currentSelectedUser
+            currentSelectedUser: this.currentSelectedUser,
+            currentUserKeys: Object.keys(this.currentUser),
+            currentSelectedUserKeys: Object.keys(this.currentSelectedUser)
         });
 
         try {
