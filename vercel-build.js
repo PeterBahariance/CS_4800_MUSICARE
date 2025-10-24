@@ -20,14 +20,32 @@ if (!existsSync(distApiDir)) {
 // Copy all API files to the dist directory
 if (existsSync(apiDir)) {
   console.log('Copying API files...');
-  const files = readdirSync(apiDir);
-  
+  const files = readdirSync(apiDir, { withFileTypes: true });
+
   for (const file of files) {
-    if (file.endsWith('.js') || file.endsWith('.mjs')) {
-      const srcPath = join(apiDir, file);
-      const destPath = join(distApiDir, file);
+    if (file.isFile() && (file.name.endsWith('.js') || file.name.endsWith('.mjs'))) {
+      const srcPath = join(apiDir, file.name);
+      const destPath = join(distApiDir, file.name);
       copyFileSync(srcPath, destPath);
-      console.log(`Copied ${file} to ${destPath}`);
+      console.log(`Copied ${file.name} to ${destPath}`);
+    } else if (file.isDirectory()) {
+      // Handle subdirectories like api/users
+      const subDir = join(apiDir, file.name);
+      const destSubDir = join(distApiDir, file.name);
+
+      if (!existsSync(destSubDir)) {
+        mkdirSync(destSubDir, { recursive: true });
+      }
+
+      const subFiles = readdirSync(subDir);
+      for (const subFile of subFiles) {
+        if (subFile.endsWith('.js') || subFile.endsWith('.mjs')) {
+          const srcPath = join(subDir, subFile);
+          const destPath = join(destSubDir, subFile);
+          copyFileSync(srcPath, destPath);
+          console.log(`Copied ${file.name}/${subFile} to ${destPath}`);
+        }
+      }
     }
   }
 }
