@@ -13,11 +13,6 @@
       }
     }
   ],
-  "deploymentProtection": {
-    "skipPaths": [
-      "/api/*"
-    ]
-  },
   "routes": [
     {
       "src": "/api/(?<path>.*)",
