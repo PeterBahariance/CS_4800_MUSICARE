@@ -141,7 +141,7 @@ a:visited {
 }
 
 /* Make sure the welcome message is properly spaced when content is shown */
-.main-content > .welcome-message {
+.main-content>.welcome-message {
     margin-bottom: 30px;
 }
 
@@ -194,8 +194,15 @@ a:visited {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Welcome message styles */
@@ -285,15 +292,35 @@ a:visited {
 }
 
 .playlists-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
     margin-bottom: 30px;
+    text-align: center;
 }
 
 .playlists-header h2 {
     font-size: 2rem;
     color: var(--text-color);
-    margin-bottom: 10px;
+    margin: 0;
     font-weight: 600;
+}
+
+.populate-playlists-btn {
+    transition: all 0.3s ease;
+}
+
+.populate-playlists-btn:hover {
+    background: #357abd !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.populate-playlists-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .disclaimer {
@@ -301,6 +328,8 @@ a:visited {
     color: var(--text-light);
     font-style: italic;
     opacity: 0.8;
+    width: 100%;
+    margin-top: 10px;
 }
 
 .playlists-grid {
@@ -705,7 +734,8 @@ a:visited {
     line-height: 1.5;
 }
 
-.feature-list, .team-grid {
+.feature-list,
+.team-grid {
     margin-top: 20px;
 }
 
@@ -872,8 +902,13 @@ a:visited {
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
@@ -881,6 +916,7 @@ a:visited {
         opacity: 0;
         transform: translateY(30px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -892,83 +928,83 @@ a:visited {
     :root {
         --sidebar-width: 60px;
     }
-    
+
     .sidebar {
         width: var(--sidebar-width);
     }
-    
+
     .sidebar-header h3 {
         display: none;
     }
-    
+
     .nav-text {
         display: none;
     }
-    
+
     .nav-item {
         justify-content: center;
         padding: 15px 10px;
     }
-    
+
     .nav-icon {
         margin-right: 0;
     }
-    
+
     .main-content {
         margin-left: var(--sidebar-width);
     }
-    
+
     .welcome-message h1 {
         font-size: 2.5rem;
     }
-    
+
     .welcome-message p {
         font-size: 1.1rem;
     }
-    
+
     .playlists-container {
         padding: 0 20px;
     }
-    
+
     .playlists-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .music-player {
         flex-direction: column;
         gap: 15px;
         padding: 15px;
     }
-    
+
     .player-track-info {
         width: 100%;
         justify-content: center;
     }
-    
+
     .player-progress {
         width: 100%;
         max-width: none;
     }
-    
+
     .player-volume {
         width: 100%;
         justify-content: center;
     }
-    
+
     .popup-content {
         width: 95%;
         max-height: 90vh;
     }
-    
+
     .popup-header {
         padding: 15px 20px;
     }
-    
+
     .popup-body {
         padding: 20px;
     }
-    
+
     .playlists-header h2 {
         font-size: 1.5rem;
     }
@@ -989,7 +1025,9 @@ a:visited {
     margin: 20px 0;
 }
 
-.populate-btn, .refresh-btn, .clear-btn {
+.populate-btn,
+.refresh-btn,
+.clear-btn {
     background: var(--primary-color);
     color: white;
     border: none;
@@ -1001,7 +1039,9 @@ a:visited {
     transition: all 0.3s ease;
 }
 
-.populate-btn:hover, .refresh-btn:hover, .clear-btn:hover {
+.populate-btn:hover,
+.refresh-btn:hover,
+.clear-btn:hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
@@ -1689,6 +1729,7 @@ a:visited {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;

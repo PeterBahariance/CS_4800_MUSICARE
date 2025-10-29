@@ -81,12 +81,23 @@ app.all('/api/search-users', async (req, res) => {
   }
 });
 
+// Import and use the playlists API handler
+import playlistsHandler from './api/playlists.js';
+app.all('/api/playlists', async (req, res) => {
+  try {
+    await playlistsHandler(req, res);
+  } catch (error) {
+    console.error('Playlists API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all route for serving index.html
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
-  
+
   // Serve index.html for all non-API routes
   res.sendFile(join(__dirname, 'index.html'));
 });

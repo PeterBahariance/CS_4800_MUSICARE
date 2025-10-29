@@ -1,11 +1,11 @@
 // src/main.js
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut
+import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut as firebaseSignOut
 } from 'firebase/auth';
 import { firebaseConfig } from './firebase/config';
 
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showLoginLink = document.getElementById('show-login');
     const loginContainer = document.getElementById('login-container');
     const signupContainer = document.getElementById('signup-container');
-    
+
     // Handle signup link - allow default navigation to signup.html
     if (showSignupLink) {
         showSignupLink.addEventListener('click', (e) => {
@@ -54,17 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const email = document.getElementById('login-email')?.value || '';
             const password = document.getElementById('login-password')?.value || '';
             const errorElement = document.getElementById('login-error');
             const submitBtn = loginForm.querySelector('button[type="submit"]');
-            
+
             // Show loading state
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
             submitBtn.innerHTML = 'Signing in...';
-            
+
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log('User logged in:', userCredential.user);
@@ -72,13 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Login error:', error);
                 let errorMessage = 'Failed to sign in. Please check your credentials.';
-                
+
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                     errorMessage = 'Invalid email or password.';
                 } else if (error.code === 'auth/too-many-requests') {
                     errorMessage = 'Too many failed attempts. Please try again later.';
                 }
-                
+
                 if (errorElement) {
                     errorElement.textContent = errorMessage;
                     errorElement.style.display = 'block';
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         errorElement.style.display = 'none';
                     }, 5000);
                 }
-                
+
                 // Re-enable submit button
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
@@ -98,25 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const email = document.getElementById('email')?.value.trim() || '';
             const password = document.getElementById('password')?.value || '';
             const confirmPassword = document.getElementById('confirm-password')?.value || '';
             const username = document.getElementById('username')?.value.trim() || '';
-            
+
             const errorElement = document.getElementById('signup-error');
             const submitBtn = signupForm.querySelector('button[type="submit"]');
             const btnText = submitBtn.querySelector('.btn-text');
-            
+
             // Reset error messages
             document.querySelectorAll('.error-message').forEach(el => {
                 el.textContent = '';
                 el.style.display = 'none';
             });
-            
+
             // Validate form
             let hasError = false;
-            
+
             if (!username) {
                 const usernameError = document.getElementById('username-error');
                 if (usernameError) {
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasError = true;
                 }
             }
-            
+
             if (!email) {
                 const emailError = document.getElementById('email-error');
                 if (emailError) {
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasError = true;
                 }
             }
-            
+
             if (password.length < 8) {
                 const passwordError = document.getElementById('password-error');
                 if (passwordError) {
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasError = true;
                 }
             }
-            
+
             if (password !== confirmPassword) {
                 const confirmPasswordError = document.getElementById('confirm-password-error');
                 if (confirmPasswordError) {
@@ -159,19 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasError = true;
                 }
             }
-            
+
             if (hasError) return;
-            
+
             // Show loading state
             submitBtn.disabled = true;
             submitBtn.classList.add('btn-loading');
             if (btnText) btnText.textContent = 'Creating Account...';
-            
+
             try {
                 // Create user in Firebase
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('User created:', userCredential.user);
-                
+
                 // Save additional user data to Prisma database
                 try {
                     console.log('Attempting to save user to database:', email);
@@ -185,28 +185,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             displayName: username
                         })
                     });
-                    
+
                     console.log('API Response status:', response.status);
                     const responseData = await response.json();
                     console.log('API Response data:', responseData);
-                    
+
                     if (!response.ok) {
                         throw new Error('Failed to save user data: ' + (responseData.error || 'Unknown error'));
                     }
-                    
+
                     console.log('User successfully saved to database');
-                    
+
                     // Show success message
                     const successMessage = document.createElement('div');
                     successMessage.className = 'success-message';
                     successMessage.textContent = 'Account created successfully! Redirecting...';
                     signupForm.appendChild(successMessage);
-                    
+
                     // Redirect to app after a short delay
                     setTimeout(() => {
                         window.location.href = 'app.html';
                     }, 1500);
-                    
+
                 } catch (dbError) {
                     console.error('Database error:', dbError);
                     // Even if database save fails, the user is still created in Firebase
@@ -215,18 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     warning.className = 'warning-message';
                     warning.textContent = 'Account created, but there was an issue saving your profile. You can update it later.';
                     signupForm.insertBefore(warning, signupForm.firstChild);
-                    
+
                     setTimeout(() => {
                         window.location.href = 'app.html';
                     }, 3000);
                 }
-                
+
             } catch (error) {
                 console.error('Signup error:', error);
-                
+
                 // Show appropriate error message
                 let errorMessage = 'An error occurred during signup. Please try again.';
-                
+
                 if (error.code === 'auth/email-already-in-use') {
                     errorMessage = 'An account with this email already exists.';
                 } else if (error.code === 'auth/invalid-email') {
@@ -234,12 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (error.code === 'auth/weak-password') {
                     errorMessage = 'Password should be at least 6 characters.';
                 }
-                
+
                 if (errorElement) {
                     errorElement.textContent = errorMessage;
                     errorElement.style.display = 'block';
                 }
-                
+
                 // Re-enable submit button
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('btn-loading');
@@ -247,16 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // Check if user is already logged in
     let isRedirecting = false;
-    
+
     onAuthStateChanged(auth, (user) => {
         const currentPath = window.location.pathname;
-        const isOnAuthPage = currentPath.endsWith('index.html') || 
-                           currentPath.endsWith('signup.html') || 
-                           currentPath === '/';
-        
+        const isOnAuthPage = currentPath.endsWith('index.html') ||
+            currentPath.endsWith('signup.html') ||
+            currentPath === '/';
+
         if (user && !isRedirecting && isOnAuthPage) {
             isRedirecting = true;
             console.log('User is logged in, redirecting to app.html');

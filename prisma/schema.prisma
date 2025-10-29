@@ -55,6 +55,9 @@ model User {
   receivedFriendRequests FriendRequest[] @relation("ReceivedRequests")
   friendsInitiated       Friend[]        @relation("FriendInitiator")
   friendsReceived        Friend[]        @relation("FriendReceiver")
+  
+  // Playlist relationships
+  createdPlaylists       Playlist[]
 
   @@map("users")
 }
@@ -94,4 +97,58 @@ enum FriendRequestStatus {
   PENDING
   ACCEPTED
   DECLINED
+}
+
+// ==================== MUSIC PLAYLIST SYSTEM ====================
+
+// Playlist model - Curated collections of songs for specific moods/wellness goals
+model Playlist {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  mood        String   // e.g., "anxiety", "focus", "sleep", "relaxation"
+  createdBy   String?  @map("created_by") // FK to User (optional for system playlists)
+  verified    Boolean  @default(false) // Verified by healthcare professional
+  coverImage  String?  @map("cover_image") // URL to cover image
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator      User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  playlistSongs PlaylistSong[]
+
+  @@map("playlists")
+}
+
+// Song model - Individual tracks with metadata
+model Song {
+  id          String   @id @default(uuid())
+  title       String
+  artist      String
+  duration    Int      // Duration in seconds
+  audioUrl    String   @map("audio_url") // URL to audio file
+  albumArt    String?  @map("album_art") // URL to album artwork
+  jamendoId   String?  @unique @map("jamendo_id") // External Jamendo track ID
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  playlistSongs PlaylistSong[]
+
+  @@map("songs")
+}
+
+// PlaylistSong junction table - Many-to-many relationship between playlists and songs
+model PlaylistSong {
+  id         String   @id @default(uuid())
+  playlistId String   @map("playlist_id")
+  songId     String   @map("song_id")
+  position   Int      @default(0) // Track order in playlist
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  // Relations
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, songId])
+  @@map("playlist_songs")
 }
