@@ -1,6 +1,6 @@
 // Friend system functionality
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from './firebase/config.js';
 
 // Initialize Firebase (reuse the same instance)
@@ -245,7 +245,7 @@ class FriendSystem {
 
         try {
             const response = await fetch(`/api/search-users?query=${encodeURIComponent(query)}&currentUserId=${this.currentUser.id}&limit=10`);
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.displaySearchResults(data.users);
@@ -272,7 +272,7 @@ class FriendSystem {
         const resultsHTML = users.map(user => {
             const displayName = user.displayName || user.username || 'Unknown User';
             const username = user.username ? `@${user.username}` : user.email;
-            
+
             let statusHTML = '';
             if (user.relationshipStatus === 'friends') {
                 statusHTML = '<span class="search-result-status friends">Friends</span>';
@@ -421,7 +421,7 @@ class FriendSystem {
                 // Update UI to show request sent
                 this.updateProfileActionButtons('request_sent');
                 this.currentSelectedUser.relationshipStatus = 'request_sent';
-                
+
                 // Show success message
                 this.showMessage('Friend request sent!', 'success');
             } else {
@@ -476,7 +476,7 @@ class FriendSystem {
             z-index: 10000;
             animation: slideIn 0.3s ease;
         `;
-        
+
         if (type === 'success') {
             toast.style.background = '#22c55e';
         } else if (type === 'error') {
@@ -643,7 +643,7 @@ class FriendSystem {
 
     displayFriendRequests(requests) {
         const container = document.getElementById('friend-requests-list');
-        
+
         if (requests.length === 0) {
             container.innerHTML = '<p class="empty-message">No pending friend requests</p>';
             return;

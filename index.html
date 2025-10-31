@@ -266,8 +266,8 @@
         <div class="auth-header">
             <h1>Welcome to Musicare</h1>
             <p>Your personal music therapy companion</p>
-        </div>
-        
+    </div>
+
         <!-- Login Form (shown by default) -->
         <div id="login-container">
             <form id="login-form">
@@ -275,14 +275,14 @@
                     <label for="login-email">Email Address</label>
                     <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required>
                     <div class="error-message" id="login-email-error"></div>
-                </div>
-                
+        </div>
+        
                 <div class="form-group">
                     <label for="login-password">Password</label>
                     <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
                     <div class="error-message" id="login-password-error"></div>
-                </div>
-                
+        </div>
+        
                 <button type="submit" class="btn btn-primary btn-block">Log In</button>
                     <div class="error-message" id="login-error" style="margin: 1rem 0; text-align: center;"></div>
                     
@@ -291,26 +291,20 @@
                         <span id="success-message">Account created successfully! Please log in.</span>
                         <div class="spinner-border spinner-border-sm text-success ms-2" role="status" style="vertical-align: middle;">
                             <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="auth-footer">
-                        <p>Don't have an account? <a href="signup.html" id="show-signup">Create account</a></p>
-                    </div>
-                </div>
-            </form>
-            
-            <div class="divider">
-                <span>or</span>
-            </div>
-            
-            <div class="demo-section">
-                <a href="app.html" class="btn btn-outline btn-block">Try Demo</a>
             </div>
         </div>
-    </div>
-
+        
+                    <div class="auth-footer">
+                        <p>Don't have an account? <a href="signup.html" id="show-signup">Create account</a></p>
+                </div>
+            </div>
+            </form>
+            
+            <!-- Demo section removed - users must authenticate to access the app -->
+            </div>
+        </div>
+        
         <!-- Main app entry point -->
         <script type="module" src="./src/main.js"></script>
-    </body>
-    </html>
+</body>
+</html>

@@ -1,66 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Musicare - Music for Health</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
+
 <body>
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-header">
             <h3>Musicare</h3>
-            <div id="user-info" style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
+            <div id="user-info"
+                style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
                 <div>Signed in as:</div>
                 <div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
             </div>
             <div class="github-link">
                 <a href="https://github.com/PeterBahariance/CS_4800_MUSICARE" target="_blank" rel="noopener noreferrer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        <path
+                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                     </svg>
                 </a>
             </div>
         </div>
-        
+
         <nav class="sidebar-nav">
-            <div class="nav-item" data-tab="about">
+            <!-- TEMPORARILY HIDDEN TABS - Remove 'display: none;' to restore -->
+            <div class="nav-item" data-tab="about" style="display: none;">
                 <span class="nav-icon">ℹ️</span>
                 <span class="nav-text">About</span>
             </div>
-            <div class="nav-item" data-tab="staff">
+            <div class="nav-item" data-tab="staff" style="display: none;">
                 <span class="nav-icon">👥</span>
                 <span class="nav-text">Team</span>
             </div>
-            <div class="nav-item" data-tab="docs">
+            <div class="nav-item" data-tab="docs" style="display: none;">
                 <span class="nav-icon">📚</span>
                 <span class="nav-text">Docs</span>
             </div>
-            <div class="nav-item" data-tab="sprints">
+            <div class="nav-item" data-tab="sprints" style="display: none;">
                 <span class="nav-icon">🏃‍♂️</span>
                 <span class="nav-text">Sprints</span>
             </div>
-            <div class="nav-item" data-tab="dailies">
+            <div class="nav-item" data-tab="dailies" style="display: none;">
                 <span class="nav-icon">📅</span>
                 <span class="nav-text">Standups</span>
             </div>
-            <div class="nav-item" data-tab="report">
+            <div class="nav-item" data-tab="report" style="display: none;">
                 <span class="nav-icon">📊</span>
                 <span class="nav-text">Reports</span>
             </div>
-            <div class="nav-item" data-tab="database">
+            <div class="nav-item" data-tab="database" style="display: none;">
                 <span class="nav-icon">🗄️</span>
                 <span class="nav-text">Database Demo</span>
             </div>
-                <div class="nav-item">
-                    <span class="nav-icon">🔔</span>
-                    <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
-                </div>
-                <div class="nav-item" id="sign-out-btn" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <span class="nav-icon">🚪</span>
-                    <span class="nav-text">Sign Out</span>
-                </div>
+            <div class="nav-item" style="display: none;">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
+            </div>
+            <div class="nav-item" id="sign-out-btn"
+                style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <span class="nav-icon">🚪</span>
+                <span class="nav-text">Sign Out</span>
+            </div>
         </nav>
     </div>
 
@@ -94,14 +100,18 @@
             <p>Music curated for your mood and well-being</p>
             <div class="subtitle">Click on the sidebar items to explore</div>
         </div>
-        
-        <!-- Music Playlists Mockup -->
+
+        <!-- Music Playlists -->
         <div class="playlists-container">
             <div class="playlists-header">
                 <h2>Therapeutic Playlists</h2>
-                <p class="disclaimer">*Mockup for documentation purposes - Non-functional player interface</p>
+                <button id="populate-playlists-btn" class="populate-playlists-btn"
+                    style="background: #4a90e2; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-left: 1rem;">
+                    🎵 Load Playlists
+                </button>
+                <p class="disclaimer" id="playlist-status">Click "Load Playlists" to fetch therapeutic music</p>
             </div>
-            
+
             <div class="playlists-grid">
                 <!-- Anxiety Relief Playlist -->
                 <div class="playlist-card">
@@ -109,7 +119,7 @@
                         <div class="cover-gradient anxiety"></div>
                         <div class="play-button">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                             </svg>
                         </div>
                     </div>
@@ -149,14 +159,14 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Focus & Concentration Playlist -->
                 <div class="playlist-card">
                     <div class="playlist-cover">
                         <div class="cover-gradient focus"></div>
                         <div class="play-button">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                             </svg>
                         </div>
                     </div>
@@ -196,14 +206,14 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Sleep & Relaxation Playlist -->
                 <div class="playlist-card">
                     <div class="playlist-cover">
                         <div class="cover-gradient sleep"></div>
                         <div class="play-button">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                             </svg>
                         </div>
                     </div>
@@ -244,7 +254,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Music Player Mockup -->
             <div class="music-player">
                 <div class="player-track-info">
@@ -256,25 +266,25 @@
                         <div class="current-track-artist">Marconi Union</div>
                     </div>
                 </div>
-                
+
                 <div class="player-controls">
                     <button class="control-btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
                         </svg>
                     </button>
                     <button class="control-btn play-pause">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
                         </svg>
                     </button>
                     <button class="control-btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                         </svg>
                     </button>
                 </div>
-                
+
                 <div class="player-progress">
                     <div class="progress-time">2:34</div>
                     <div class="progress-bar">
@@ -282,10 +292,11 @@
                     </div>
                     <div class="progress-time">8:10</div>
                 </div>
-                
+
                 <div class="player-volume">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        <path
+                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
                     </svg>
                     <div class="volume-bar">
                         <div class="volume-fill" style="width: 65%;"></div>
@@ -323,7 +334,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="staff-content">
             <div class="section-content">
                 <p>Meet the talented individuals behind Musicare.</p>
@@ -335,58 +346,61 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="docs-content">
             <div class="section-content">
                 <p>Access project documentation, guides, and technical specifications.</p>
-                
+
                 <div class="file-upload-section">
                     <h3>Upload Documentation</h3>
                     <div class="file-upload-area" data-section="docs">
                         <div class="upload-icon">📚</div>
                         <p>Drop your .txt or .pdf files here or click to browse</p>
                         <input type="file" id="docs-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('docs-file').click()">Choose Files</button>
+                        <button class="upload-btn" onclick="document.getElementById('docs-file').click()">Choose
+                            Files</button>
                     </div>
                     <div class="uploaded-files" id="docs-files"></div>
                 </div>
             </div>
         </div>
-        
+
         <div id="sprints-content">
             <div class="section-content">
                 <p>Track our development progress through sprint planning and retrospectives.</p>
-                
+
                 <div class="file-upload-section">
                     <h3>Upload Sprint Documents</h3>
                     <div class="file-upload-area" data-section="sprints">
                         <div class="upload-icon">🏃‍♂️</div>
                         <p>Drop your .txt or .pdf files here or click to browse</p>
                         <input type="file" id="sprints-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('sprints-file').click()">Choose Files</button>
+                        <button class="upload-btn" onclick="document.getElementById('sprints-file').click()">Choose
+                            Files</button>
                     </div>
                     <div class="uploaded-files" id="sprints-files"></div>
                 </div>
             </div>
         </div>
-        
+
         <div id="dailies-content">
             <div class="section-content">
                 <p>Daily team check-ins, blockers, and progress updates.</p>
-                
+
                 <div class="file-upload-section">
                     <h3>Upload Standup Notes</h3>
                     <div class="file-upload-area" data-section="dailies">
                         <div class="upload-icon">📅</div>
                         <p>Drop your .txt or .pdf files here or click to browse</p>
                         <input type="file" id="dailies-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('dailies-file').click()">Choose Files</button>
+                        <button class="upload-btn" onclick="document.getElementById('dailies-file').click()">Choose
+                            Files</button>
                     </div>
                     <div class="uploaded-files" id="dailies-files"></div>
                 </div>
             </div>
         </div>
-        
+
         <div id="report-content">
             <div class="section-content">
                 <p>Comprehensive project reports, analysis, and final deliverables.</p>
@@ -397,7 +411,8 @@
                         <div class="upload-icon">📊</div>
                         <p>Drop your .txt or .pdf files here or click to browse</p>
                         <input type="file" id="report-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('report-file').click()">Choose Files</button>
+                        <button class="upload-btn" onclick="document.getElementById('report-file').click()">Choose
+                            Files</button>
                     </div>
                     <div class="uploaded-files" id="report-files"></div>
                 </div>
@@ -442,14 +457,14 @@
         </div>
     </div>
     <script type="module">
-        // Import Firebase modules through Vite
-        import { initializeApp } from 'firebase/app';
-        import { 
-            getAuth, 
+        // Import Firebase modules from CDN
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getAuth,
             signOut as firebaseSignOut,
             onAuthStateChanged
-        } from 'firebase/auth';
-        
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
         // Import Firebase config from src/firebase/config.js
         let firebaseConfig = {};
         try {
@@ -460,24 +475,24 @@
             console.error('Error loading Firebase config:', error);
             alert('Error: Failed to load Firebase configuration. The app may not work correctly.');
         }
-        
+
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
-        
+
         // Export auth for other modules if needed
         window.auth = auth;
-        
+
         console.log('Firebase initialized with config:', {
             ...firebaseConfig,
             apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
         });
-        
+
         // Update UI based on auth state
         onAuthStateChanged(auth, (user) => {
             const userInfo = document.getElementById('user-info');
             const userEmail = document.getElementById('user-email');
-            
+
             if (user) {
                 // User is signed in
                 userEmail.textContent = user.email;
@@ -487,7 +502,7 @@
                 userInfo.style.display = 'none';
             }
         });
-        
+
         // Function to show a confirmation dialog
         function showConfirmationDialog(message) {
             return new Promise((resolve) => {
@@ -562,7 +577,7 @@
         // Add click event listener to sign out button
         document.getElementById('sign-out-btn').addEventListener('click', async () => {
             const confirm = await showConfirmationDialog('Are you sure you want to sign out?');
-            
+
             if (confirm) {
                 showLoading('Signing out...');
                 try {
@@ -609,10 +624,14 @@
 
                         <div class="profile-actions">
                             <button id="add-friend-btn" class="friend-action-btn primary">Add Friend</button>
-                            <button id="cancel-request-btn" class="friend-action-btn secondary" style="display: none;">Cancel Request</button>
-                            <button id="accept-request-btn" class="friend-action-btn success" style="display: none;">Accept Request</button>
-                            <button id="decline-request-btn" class="friend-action-btn danger" style="display: none;">Decline Request</button>
-                            <button id="remove-friend-btn" class="friend-action-btn danger" style="display: none;">Remove Friend</button>
+                            <button id="cancel-request-btn" class="friend-action-btn secondary"
+                                style="display: none;">Cancel Request</button>
+                            <button id="accept-request-btn" class="friend-action-btn success"
+                                style="display: none;">Accept Request</button>
+                            <button id="decline-request-btn" class="friend-action-btn danger"
+                                style="display: none;">Decline Request</button>
+                            <button id="remove-friend-btn" class="friend-action-btn danger"
+                                style="display: none;">Remove Friend</button>
                         </div>
                     </div>
                 </div>
@@ -653,5 +672,5 @@
     <!-- Load the main app script as a module -->
     <script type="module" src="/src/app.js"></script>
 </body>
-</html>
 
+</html>
