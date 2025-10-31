@@ -456,13 +456,13 @@
         </div>
     </div>
     <script type="module">
-        // Import Firebase modules through Vite
-        import { initializeApp } from 'firebase/app';
+        // Import Firebase modules from CDN
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import {
             getAuth,
             signOut as firebaseSignOut,
             onAuthStateChanged
-        } from 'firebase/auth';
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         // Import Firebase config from src/firebase/config.js
         let firebaseConfig = {};

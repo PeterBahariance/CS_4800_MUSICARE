@@ -1,10 +1,10 @@
 // Import Firebase modules
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
   getAuth,
   signOut as firebaseSignOut,
   onAuthStateChanged
-} from 'firebase/auth';
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from './firebase/config';
 import './friends.js'; // Import friend system
 

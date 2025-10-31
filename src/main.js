@@ -1,12 +1,12 @@
 // src/main.js
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
     onAuthStateChanged,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut
-} from 'firebase/auth';
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from './firebase/config';
 
 // Initialize Firebase
