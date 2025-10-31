@@ -1,4 +1,5 @@
 // Music Player Module - Handles audio playback and playlist management
+console.log('🎵 Music Player: Module file loaded!');
 
 class MusicPlayer {
     constructor() {
@@ -455,15 +456,32 @@ class MusicPlayer {
 // Initialize music player when DOM is ready
 let musicPlayer;
 
-document.addEventListener('DOMContentLoaded', () => {
-    musicPlayer = new MusicPlayer();
-    musicPlayer.setupPlayerControls();
+console.log('🎵 Music Player: Module loaded, checking DOM state...');
+console.log('🎵 Music Player: Document ready state:', document.readyState);
 
-    // Make it globally available
-    window.musicPlayer = musicPlayer;
+function initializeMusicPlayer() {
+    try {
+        console.log('🎵 Music Player: Starting initialization...');
+        musicPlayer = new MusicPlayer();
+        musicPlayer.setupPlayerControls();
 
-    console.log('🎵 Music Player initialized');
-});
+        // Make it globally available
+        window.musicPlayer = musicPlayer;
+
+        console.log('🎵 Music Player: Successfully initialized');
+    } catch (error) {
+        console.error('🎵 Music Player: Initialization failed:', error);
+    }
+}
+
+// Initialize immediately if DOM is already ready, otherwise wait for DOMContentLoaded
+if (document.readyState === 'loading') {
+    console.log('🎵 Music Player: DOM still loading, waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', initializeMusicPlayer);
+} else {
+    console.log('🎵 Music Player: DOM already ready, initializing immediately...');
+    initializeMusicPlayer();
+}
 
 export default MusicPlayer;
 
