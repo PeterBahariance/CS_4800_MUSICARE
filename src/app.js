@@ -132,5 +132,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const initialTab = urlParams.get('tab') || 'about';
 showTab(initialTab);
 
+// Import and initialize music player
+import './music-player.js';
+
 // Initialize any other app-specific functionality here
 console.log('App initialized');
