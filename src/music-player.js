@@ -13,7 +13,8 @@ class MusicPlayer {
     }
 
     init() {
-        console.log('Music Player: Initializing...');
+        console.log('🎵 Music Player: Initializing...');
+        console.log('🎵 Music Player: Setting up audio event listeners...');
 
         // Set up audio element event listeners
         this.audio.addEventListener('ended', () => this.playNext());
@@ -21,28 +22,39 @@ class MusicPlayer {
         this.audio.addEventListener('loadedmetadata', () => this.onTrackLoaded());
         this.audio.addEventListener('error', (e) => this.handleError(e));
 
+        console.log('🎵 Music Player: About to load playlists...');
         // Load playlists from API
         this.loadPlaylists();
     }
 
     async loadPlaylists() {
         try {
-            console.log('Loading playlists from API...');
+            console.log('🎵 Music Player: Loading playlists from API...');
+            console.log('🎵 Music Player: Fetching from /api/playlists');
+
             const response = await fetch('/api/playlists');
+            console.log('🎵 Music Player: Response status:', response.status);
+            console.log('🎵 Music Player: Response ok:', response.ok);
 
             if (!response.ok) {
-                throw new Error('Failed to load playlists');
+                const errorText = await response.text();
+                console.error('🎵 Music Player: API Error Response:', errorText);
+                throw new Error(`Failed to load playlists: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
-            this.playlists = data.playlists || [];
+            console.log('🎵 Music Player: Raw API response:', data);
 
-            console.log(`Loaded ${this.playlists.length} playlists`);
+            this.playlists = data.playlists || [];
+            console.log('🎵 Music Player: Processed playlists:', this.playlists);
+            console.log(`🎵 Music Player: Loaded ${this.playlists.length} playlists`);
 
             // If no playlists in database, show empty placeholders
             if (this.playlists.length === 0) {
+                console.log('🎵 Music Player: No playlists found, showing empty state');
                 this.displayEmptyPlaylists();
             } else {
+                console.log('🎵 Music Player: Displaying playlists');
                 // Display playlists with real data
                 this.displayPlaylists();
 
@@ -50,7 +62,8 @@ class MusicPlayer {
                 this.selectPlaylist(this.playlists[0]);
             }
         } catch (error) {
-            console.error('Error loading playlists:', error);
+            console.error('🎵 Music Player: Error loading playlists:', error);
+            console.error('🎵 Music Player: Error details:', error.message);
             this.showError('Failed to load playlists. Try populating the database first.');
         }
     }
