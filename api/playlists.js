@@ -1,6 +1,6 @@
 // API endpoint for playlist operations
 import { prisma } from '../lib/prisma.js';
-import { getTherapeuticPlaylists, getFallbackPlaylists } from '../lib/jamendo.js';
+import { getTherapeuticPlaylists } from '../lib/jamendo.js';
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -211,15 +211,20 @@ async function populatePlaylists(req, res) {
             const totalTracks = playlistsData.reduce((sum, p) => sum + (p.tracks?.length || 0), 0);
 
             if (totalTracks === 0) {
-                console.warn('Jamendo returned 0 tracks, using fallback');
-                playlistsData = getFallbackPlaylists();
+                console.warn('Jamendo returned 0 tracks');
+                return res.status(500).json({
+                    error: 'No tracks found from Jamendo API',
+                    details: 'Jamendo API returned empty results. Please check your API credentials and try again.'
+                });
             } else {
                 console.log(`Successfully fetched ${totalTracks} tracks from Jamendo!`);
             }
         } catch (error) {
             console.error('Jamendo API error:', error.message);
-            console.log('🎵 Using fallback playlists instead');
-            playlistsData = getFallbackPlaylists();
+            return res.status(500).json({
+                error: 'Failed to fetch playlists from Jamendo',
+                details: error.message
+            });
         }
 
         // Clear existing playlists (optional - remove if you want to keep existing)

@@ -13,7 +13,7 @@ class MusicPlayer {
     }
 
     init() {
-        console.log('🎵 Music Player: Initializing...');
+        console.log('Music Player: Initializing...');
 
         // Set up audio element event listeners
         this.audio.addEventListener('ended', () => this.playNext());
@@ -27,7 +27,7 @@ class MusicPlayer {
 
     async loadPlaylists() {
         try {
-            console.log('🎵 Loading playlists from API...');
+            console.log('Loading playlists from API...');
             const response = await fetch('/api/playlists');
 
             if (!response.ok) {
@@ -37,7 +37,7 @@ class MusicPlayer {
             const data = await response.json();
             this.playlists = data.playlists || [];
 
-            console.log(`🎵 Loaded ${this.playlists.length} playlists`);
+            console.log(`Loaded ${this.playlists.length} playlists`);
 
             // If no playlists in database, show empty placeholders
             if (this.playlists.length === 0) {
@@ -180,7 +180,7 @@ class MusicPlayer {
     }
 
     selectPlaylist(playlist) {
-        console.log('🎵 Selected playlist:', playlist.title);
+        console.log('Selected playlist:', playlist.title);
         this.currentPlaylist = playlist;
         this.currentTrackIndex = 0;
         this.currentTrack = playlist.tracks[0];
@@ -362,7 +362,7 @@ class MusicPlayer {
         if (btn) btn.disabled = true;
 
         try {
-            console.log('🎵 Populating database with playlists...');
+            console.log('Populating database with playlists...');
             const response = await fetch('/api/playlists?populate=true');
 
             if (!response.ok) {
@@ -370,16 +370,16 @@ class MusicPlayer {
             }
 
             const data = await response.json();
-            console.log('✅ Playlists populated:', data);
+            console.log('Playlists populated:', data);
 
-            if (statusEl) statusEl.textContent = `✅ Loaded ${data.count} playlists with real music!`;
+            if (statusEl) statusEl.textContent = `Loaded ${data.count} playlists with real music!`;
 
             // Reload playlists
             await this.loadPlaylists();
 
         } catch (error) {
             console.error('Error populating playlists:', error);
-            if (statusEl) statusEl.textContent = '❌ Failed to load playlists. Check console for details.';
+            if (statusEl) statusEl.textContent = 'Failed to load playlists. Check console for details.';
         } finally {
             if (btn) btn.disabled = false;
         }
