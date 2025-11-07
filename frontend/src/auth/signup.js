@@ -4,7 +4,7 @@ import {
   getAuth,
   createUserWithEmailAndPassword
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { firebaseConfig } from '../firebase/config';
+import { firebaseConfig } from '../config/firebase.js';
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showSuccess('Account created successfully! Redirecting...');
                     
                     setTimeout(() => {
-                        window.location.href = '/app.html';
+                        window.location.href = '/pages/app.html';
                     }, 1500);
                     
                 } catch (dbError) {
@@ -250,3 +250,4 @@ function getFirebaseErrorMessage(error) {
     };
     return errorMessages[error.code] || error.message;
 }
+

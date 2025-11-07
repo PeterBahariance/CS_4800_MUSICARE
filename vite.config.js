@@ -5,7 +5,7 @@ import { resolve } from 'path';
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  
+
   // Log environment variables for debugging
   console.log('Vite Environment:', {
     NODE_ENV: process.env.NODE_ENV,
@@ -16,10 +16,11 @@ export default defineConfig(({ mode }) => {
   });
 
   return {
+    root: 'frontend',
     base: '/',
     publicDir: 'public',
     build: {
-      outDir: 'dist',
+      outDir: '../dist',
       emptyOutDir: true,
       target: 'esnext',
       minify: isProduction ? 'esbuild' : false,
@@ -27,10 +28,10 @@ export default defineConfig(({ mode }) => {
       assetsInlineLimit: 0, // Ensure all assets are emitted as files
       rollupOptions: {
         input: {
-          main: resolve(__dirname, 'index.html'),
-          notif: resolve(__dirname, 'notif.html'),
-          app: resolve(__dirname, 'app.html'),
-          signup: resolve(__dirname, 'signup.html')
+          main: resolve(__dirname, 'frontend/index.html'),
+          notif: resolve(__dirname, 'frontend/pages/notif.html'),
+          app: resolve(__dirname, 'frontend/pages/app.html'),
+          signup: resolve(__dirname, 'frontend/pages/signup.html')
         },
         output: {
           entryFileNames: 'assets/[name]-[hash].js',

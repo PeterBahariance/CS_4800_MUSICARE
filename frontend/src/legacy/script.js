@@ -1,14 +1,14 @@
 // Import database functions
-import { uploadFileToDatabase } from './lib/database.js';
+import { uploadFileToDatabase } from '../../../backend/lib/database.js';
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize popup functionality
     initializePopupSystem();
-    
+
     // File upload functionality
     initializeFileUploads();
-    
+
     // Load saved files from localStorage
     loadSavedFiles();
 });
@@ -20,7 +20,7 @@ function initializePopupSystem() {
     const popupTitle = document.getElementById('popup-title');
     const popupBody = document.getElementById('popup-body');
     const closeBtn = document.getElementById('close-popup');
-    
+
     // Section titles mapping
     const sectionTitles = {
         'about': 'About Us',
@@ -31,19 +31,19 @@ function initializePopupSystem() {
         'report': 'Project Report',
         'database': 'Database Demo'
     };
-    
+
     // Add click event listeners to navigation items
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const tabId = item.getAttribute('data-tab');
             openPopup(tabId, sectionTitles[tabId]);
-            
+
             // Update active state
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
         });
     });
-    
+
     // Close popup functionality
     closeBtn.addEventListener('click', closePopup);
     popupOverlay.addEventListener('click', (e) => {
@@ -51,29 +51,29 @@ function initializePopupSystem() {
             closePopup();
         }
     });
-    
+
     // Close popup with Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && popupOverlay.classList.contains('active')) {
             closePopup();
         }
     });
-    
+
     function openPopup(contentId, title) {
         const contentTemplate = document.getElementById(`${contentId}-content`);
         if (contentTemplate) {
             popupTitle.textContent = title;
             popupBody.innerHTML = contentTemplate.innerHTML;
             popupOverlay.classList.add('active');
-            
+
             // Re-initialize file upload functionality for the popup content
             initializePopupFileUploads();
-            
+
             // Reload files for this section
             reloadFilesForSection(contentId);
         }
     }
-    
+
     function closePopup() {
         popupOverlay.classList.remove('active');
         // Remove active state from nav items
@@ -101,7 +101,7 @@ function setupFileUploadHandlers(container) {
     uploadAreas.forEach(area => {
         const section = area.getAttribute('data-section');
         const fileInput = container.querySelector(`#${section}-file`);
-        
+
         if (!fileInput) return;
 
         // Remove existing event listeners to prevent duplicates
@@ -123,12 +123,12 @@ function setupFileUploadHandlers(container) {
         newArea.addEventListener('drop', (e) => {
             e.preventDefault();
             newArea.classList.remove('dragover');
-            
+
             const files = Array.from(e.dataTransfer.files);
-            const validFiles = files.filter(file => 
+            const validFiles = files.filter(file =>
                 file.type === 'text/plain' || file.type === 'application/pdf'
             );
-            
+
             if (validFiles.length > 0) {
                 handleFileUpload(validFiles, section);
             } else {
@@ -140,11 +140,11 @@ function setupFileUploadHandlers(container) {
         newArea.addEventListener('click', () => {
             newFileInput.click();
         });
-        
+
         // File input change event
         newFileInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            
+
             if (files.length > 0) {
                 handleFileUpload(files, section);
             }
@@ -163,12 +163,12 @@ function handleFileUpload(files, section) {
             filesContainer = popupBody.querySelector(`#${section}-files`);
         }
     }
-    
+
     if (!filesContainer) {
         console.error(`Files container not found for section: ${section}`);
         return;
     }
-    
+
     files.forEach(file => {
         // Check file type
         if (file.type !== 'text/plain' && file.type !== 'application/pdf') {
@@ -184,7 +184,7 @@ function handleFileUpload(files, section) {
 
         // Convert file to base64 and save to database
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = async function (e) {
             const fileData = {
                 name: file.name,
                 type: file.type,
@@ -192,15 +192,15 @@ function handleFileUpload(files, section) {
                 content: e.target.result,
                 section: section
             };
-            
+
             try {
                 // Save to database
                 const response = await uploadFileToDatabase(fileData);
-                
+
                 // Create and display file item at the top
                 const fileItem = createFileItemFromData(response.file);
                 filesContainer.insertBefore(fileItem, filesContainer.firstChild);
-                
+
                 // Also update the corresponding container in the main document if we're in a popup
                 const mainContainer = document.getElementById(`${section}-files`);
                 if (mainContainer && mainContainer !== filesContainer) {
@@ -219,12 +219,12 @@ function handleFileUpload(files, section) {
 function createFileItemFromData(fileData) {
     const fileItem = document.createElement('div');
     fileItem.className = 'file-item';
-    
+
     const fileIcon = fileData.type === 'application/pdf' ? '📄' : '📝';
     const fileSize = formatFileSize(fileData.size);
-    
+
     fileItem.setAttribute('data-file-id', fileData.id);
-    
+
     fileItem.innerHTML = `
         <div class="file-info">
             <div class="file-icon">${fileIcon}</div>
@@ -238,18 +238,18 @@ function createFileItemFromData(fileData) {
             <button class="remove-file" data-file-id="${fileData.id}">Remove</button>
         </div>
     `;
-    
+
     return fileItem;
 }
 
 // Format file size for display
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -260,9 +260,9 @@ async function loadSavedFiles() {
         if (!response.ok) {
             throw new Error('Failed to fetch files');
         }
-        
+
         const { files } = await response.json();
-        
+
         // Group files by section and display them
         files.forEach(fileData => {
             // Load into template containers (for when popups are opened)
@@ -271,7 +271,7 @@ async function loadSavedFiles() {
                 const templateFileItem = createFileItemFromData(fileData);
                 templateContainer.appendChild(templateFileItem);
             }
-            
+
             // Also load into any currently visible popup containers
             const popupContainer = document.querySelector(`#popup-body .uploaded-files[data-section="${fileData.section}"]`);
             if (popupContainer) {
@@ -291,11 +291,11 @@ function reloadFilesForSection(section) {
         .then(({ files }) => {
             const sectionFiles = files.filter(file => file.section === section);
             const popupContainer = document.querySelector(`#popup-body .uploaded-files[data-section="${section}"]`);
-            
+
             if (popupContainer) {
                 // Clear existing files in popup
                 popupContainer.innerHTML = '';
-                
+
                 // Add all files for this section
                 sectionFiles.forEach(fileData => {
                     const fileItem = createFileItemFromData(fileData);
@@ -319,7 +319,7 @@ async function removeFileFromDatabase(fileId) {
         });
 
         const responseData = await response.json().catch(() => ({}));
-        
+
         if (!response.ok) {
             console.error('Delete failed:', response.status, responseData);
             throw new Error(responseData.error || `Failed to delete file: ${response.statusText}`);
@@ -339,7 +339,7 @@ async function getFileFromDatabase(fileId) {
         if (!response.ok) {
             throw new Error('Failed to fetch files');
         }
-        
+
         const { files } = await response.json();
         // Convert both IDs to strings for comparison to ensure type consistency
         return files.find(file => String(file.id) === String(fileId));
@@ -357,7 +357,7 @@ async function downloadFile(fileId) {
             alert('File not found.');
             return;
         }
-        
+
         // Convert base64 back to blob
         const byteCharacters = atob(fileData.content.split(',')[1]);
         const byteNumbers = new Array(byteCharacters.length);
@@ -366,7 +366,7 @@ async function downloadFile(fileId) {
         }
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: fileData.type });
-        
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -387,21 +387,21 @@ async function removeFile(button) {
         console.error('Could not find parent file item');
         return;
     }
-    
+
     const fileId = fileItem.getAttribute('data-file-id');
     if (!fileId) {
         console.error('No file ID found for removal');
         console.log('File item attributes:', fileItem.attributes);
         return;
     }
-    
+
     console.log('Removing file with ID:', fileId);
-    
+
     try {
         // Remove from database
         console.log('Calling removeFileFromDatabase with ID:', fileId);
         await removeFileFromDatabase(fileId);
-        
+
         // Remove from DOM
         console.log('Removing file item from DOM');
         fileItem.remove();

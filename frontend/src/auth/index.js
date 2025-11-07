@@ -1,4 +1,4 @@
-// src/main.js
+// src/auth/index.js
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
@@ -7,7 +7,7 @@ import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { firebaseConfig } from './firebase/config';
+import { firebaseConfig } from '../config/firebase.js';
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Redirect to app after a short delay
                     setTimeout(() => {
-                        window.location.href = 'app.html';
+                        window.location.href = 'pages/app.html';
                     }, 1500);
 
                 } catch (dbError) {
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     signupForm.insertBefore(warning, signupForm.firstChild);
 
                     setTimeout(() => {
-                        window.location.href = 'app.html';
+                        window.location.href = 'pages/app.html';
                     }, 3000);
                 }
 
@@ -260,10 +260,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user && !isRedirecting && isOnAuthPage) {
             isRedirecting = true;
             console.log('User is logged in, redirecting to app.html');
-            window.location.href = 'app.html';
+            window.location.href = 'pages/app.html';
         } else if (!user && currentPath.endsWith('app.html')) {
             // If user is not logged in and trying to access app.html, redirect to login
-            window.location.href = 'index.html';
+            window.location.href = '../index.html';
         }
     });
 });
+

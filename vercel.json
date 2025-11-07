@@ -11,7 +11,19 @@
     },
     {
       "src": "/signup",
-      "dest": "/signup.html"
+      "dest": "/pages/signup.html"
+    },
+    {
+      "src": "/app",
+      "dest": "/pages/app.html"
+    },
+    {
+      "src": "/notifications",
+      "dest": "/pages/notif.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/api/$1"
     },
     {
       "src": "/(.*)",

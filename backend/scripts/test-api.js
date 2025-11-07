@@ -50,7 +50,7 @@ const testApi = async () => {
       const fs = await import('fs');
       const path = await import('path');
       
-      const apiPath = path.join(process.cwd(), 'api', 'users', 'index.js');
+      const apiPath = path.join(process.cwd(), 'backend', 'api', 'users', 'index.js');
       console.log(`\nChecking if API file exists at: ${apiPath}`);
       console.log('File exists:', fs.existsSync(apiPath));
       

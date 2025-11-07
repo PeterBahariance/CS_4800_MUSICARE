@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Ensure the API directory exists in the build output
-const apiDir = join(__dirname, 'api');
+const apiDir = join(__dirname, 'backend', 'api');
 const distApiDir = join(__dirname, 'dist/api');
 
 // Function to copy files and directories recursively

@@ -1,7 +1,7 @@
 // Friend system functionality
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { firebaseConfig } from './firebase/config.js';
+import { firebaseConfig } from '../../config/firebase.js';
 
 // Initialize Firebase (reuse the same instance)
 const app = initializeApp(firebaseConfig);

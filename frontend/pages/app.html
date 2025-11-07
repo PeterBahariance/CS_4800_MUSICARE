@@ -465,10 +465,10 @@
             onAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-        // Import Firebase config from src/firebase/config.js
+        // Import Firebase config from src/config/firebase.js
         let firebaseConfig = {};
         try {
-            const { firebaseConfig: config } = await import('/src/firebase/config.js');
+            const { firebaseConfig: config } = await import('/src/config/firebase.js');
             firebaseConfig = config;
             console.log('Firebase config loaded successfully');
         } catch (error) {
@@ -670,7 +670,7 @@
     </div>
 
     <!-- Load the main app script as a module -->
-    <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/app/index.js"></script>
 </body>
 
 </html>
