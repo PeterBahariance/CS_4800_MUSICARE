@@ -18,7 +18,7 @@
  * // GET /api/users?test=true - Health check endpoint
  */
 
-import { prisma } from '../../lib/prisma.js';
+import { prisma } from '../../backend/lib/prisma.js';
 
 /**
  * GET Request Handler - Retrieve User Information
