@@ -58,6 +58,8 @@ model User {
   
   // Playlist relationships
   createdPlaylists       Playlist[]
+  savedPlaylists         UserSavedPlaylist[]
+  savedSongs             UserSavedSong[]
 
   @@map("users")
 }
@@ -112,10 +114,15 @@ model Playlist {
   coverImage  String?  @map("cover_image") // URL to cover image
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  category    PlaylistCategory?
+  categoryKey String?  @map("category_key")
+  seedTags    String[] @default([])
+  seededAt    DateTime? @map("seeded_at")
 
   // Relations
   creator      User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   playlistSongs PlaylistSong[]
+  savedBy      UserSavedPlaylist[]
 
   @@map("playlists")
 }
@@ -129,10 +136,12 @@ model Song {
   audioUrl    String   @map("audio_url") // URL to audio file
   albumArt    String?  @map("album_art") // URL to album artwork
   jamendoId   String?  @unique @map("jamendo_id") // External Jamendo track ID
+  genreTags   String[] @default([]) // Tags/genres from Jamendo
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
   playlistSongs PlaylistSong[]
+  savedBy       UserSavedSong[]
 
   @@map("songs")
 }
@@ -151,4 +160,3 @@ model PlaylistSong {
 
   @@unique([playlistId, songId])
   @@map("playlist_songs")
-}

@@ -86,11 +86,22 @@ app.all('/api/search-users', async (req, res) => {
 
 // Import and use the playlists API handler
 import playlistsHandler from '../api/playlists.js';
+import libraryHandler from '../api/library.js';
 app.all('/api/playlists', async (req, res) => {
   try {
     await playlistsHandler(req, res);
   } catch (error) {
     console.error('Playlists API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import and use the library API handler
+app.all('/api/library', async (req, res) => {
+  try {
+    await libraryHandler(req, res);
+  } catch (error) {
+    console.error('Library API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
