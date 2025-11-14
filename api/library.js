@@ -7,7 +7,7 @@ import { prisma } from '../backend/lib/prisma.js';
 
 // Import the main library logic from backend
 async function handleLibraryRequest(req, res) {
-    console.log('📚 Library API: Request received', {
+    console.log('📚 Library API: Request received (v2)', {
         method: req.method,
         query: req.query,
         url: req.url

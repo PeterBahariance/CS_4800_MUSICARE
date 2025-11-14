@@ -7,7 +7,7 @@ import { prisma } from '../backend/lib/prisma.js';
 
 // Import the main playlists logic from backend
 async function handlePlaylistsRequest(req, res) {
-    console.log('🎵 Playlists API: Request received', {
+    console.log('🎵 Playlists API: Request received (v2)', {
         method: req.method,
         query: req.query,
         url: req.url

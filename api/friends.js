@@ -7,7 +7,7 @@ import { prisma } from '../backend/lib/prisma.js';
 
 // Import the main friends logic from backend
 async function handleFriendsRequest(req, res) {
-    console.log('👥 Friends API: Request received', {
+    console.log('👥 Friends API: Request received (v2)', {
         method: req.method,
         query: req.query,
         url: req.url
