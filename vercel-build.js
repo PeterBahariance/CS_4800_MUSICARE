@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 console.log('Running vercel-build.js...');
 
 // Ensure the API directory exists in the build output
-const apiDir = join(__dirname, 'backend', 'api');
+const apiDir = join(__dirname, 'api');
 const distApiDir = join(__dirname, 'dist/api');
 
 if (!existsSync(distApiDir)) {

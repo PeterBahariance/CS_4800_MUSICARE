@@ -19,8 +19,8 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Rest of your imports
-import mockFilesHandler from '../api/mock-files.js';
-import mockPeopleHandler from '../api/mock-people.js';
+import filesHandler from '../api/files.js';
+import peopleHandler from '../api/people.js';
 
 const app = express();
 const PORT = 3000;
@@ -35,16 +35,16 @@ app.use('/assets', express.static(join(projectRoot, 'dist', 'assets')));
 // API Routes
 app.all('/api/files', async (req, res) => {
   try {
-    await mockFilesHandler(req, res);
+    await filesHandler(req, res);
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Files API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.all('/api/people', async (req, res) => {
   try {
-    await mockPeopleHandler(req, res);
+    await peopleHandler(req, res);
   } catch (error) {
     console.error('People API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
