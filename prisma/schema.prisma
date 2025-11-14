@@ -1,28 +1,24 @@
-// Define database connection via the `DATABASE_URL` env var
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Define Prisma Client generator
-generator client {
-  provider = "prisma-client-js"
-}
-
-// File storage model for Musicare
 model File {
   id        Int      @id @default(autoincrement())
   name      String
   type      String
   size      Int
-  content   String   @db.Text
+  content   String
   section   String
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("musicare_files")
 }
 
-// People model for database demo
 model People {
   id        Int    @id @default(autoincrement())
   firstName String @map("first_name")
@@ -31,124 +27,147 @@ model People {
   @@map("people")
 }
 
-// User model for Musicare - Music for Health & Wellness
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  firebaseUid   String?   @unique // Firebase Authentication UID
-  username      String?   @unique // Unique handle like @username
-  displayName   String?   // Display name shown to others
-  emailVerified Boolean   @default(false)
-
-  // Health & Wellness preferences
-  healthGoals   String[]  @default([]) // e.g., ["mental_wellness", "stress_relief", "sleep_improvement"]
-  musicPreferences String[] @default([]) // Preferred genres
-  dailyListeningGoal Int?  // Minutes per day goal
-
-  // Metadata
-  timezone      String?
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  // Friend relationships
-  sentFriendRequests     FriendRequest[] @relation("SentRequests")
-  receivedFriendRequests FriendRequest[] @relation("ReceivedRequests")
-  friendsInitiated       Friend[]        @relation("FriendInitiator")
-  friendsReceived        Friend[]        @relation("FriendReceiver")
-  
-  // Playlist relationships
+  id                     String              @id @default(uuid())
+  email                  String              @unique
+  firebaseUid            String?             @unique
+  username               String?             @unique
+  displayName            String?
+  emailVerified          Boolean             @default(false)
+  healthGoals            String[]            @default([])
+  musicPreferences       String[]            @default([])
+  dailyListeningGoal     Int?
+  timezone               String?
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  receivedFriendRequests FriendRequest[]     @relation("ReceivedRequests")
+  sentFriendRequests     FriendRequest[]     @relation("SentRequests")
+  friendsReceived        Friend[]            @relation("FriendReceiver")
+  friendsInitiated       Friend[]            @relation("FriendInitiator")
   createdPlaylists       Playlist[]
+  savedPlaylists         UserSavedPlaylist[]
+  savedSongs             UserSavedSong[]
 
   @@map("users")
 }
 
-// Friend relationship model
 model Friend {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  friendId    String   @map("friend_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  user        User     @relation("FriendInitiator", fields: [userId], references: [id], onDelete: Cascade)
-  friend      User     @relation("FriendReceiver", fields: [friendId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  friendId  String   @map("friend_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  friend    User     @relation("FriendReceiver", fields: [friendId], references: [id], onDelete: Cascade)
+  user      User     @relation("FriendInitiator", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
   @@map("friends")
 }
 
-// Friend request model
 model FriendRequest {
-  id          String            @id @default(uuid())
-  senderId    String            @map("sender_id")
-  receiverId  String            @map("receiver_id")
-  status      FriendRequestStatus @default(PENDING)
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-
-  sender      User              @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver    User              @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  id         String              @id @default(uuid())
+  senderId   String              @map("sender_id")
+  receiverId String              @map("receiver_id")
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+  receiver   User                @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User                @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
   @@map("friend_requests")
 }
 
-// Friend request status enum
+model Playlist {
+  id            String              @id @default(uuid())
+  title         String
+  description   String?
+  mood          String
+  createdBy     String?             @map("created_by")
+  verified      Boolean             @default(false)
+  coverImage    String?             @map("cover_image")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  category      PlaylistCategory?
+  categoryKey   String?             @map("category_key")
+  seedTags      String[]            @default([])
+  seededAt      DateTime?           @map("seeded_at")
+  playlistSongs PlaylistSong[]
+  creator       User?               @relation(fields: [createdBy], references: [id])
+  savedBy       UserSavedPlaylist[]
+
+  @@map("playlists")
+}
+
+model Song {
+  id            String          @id @default(uuid())
+  title         String
+  artist        String
+  duration      Int
+  audioUrl      String          @map("audio_url")
+  albumArt      String?         @map("album_art")
+  jamendoId     String?         @unique @map("jamendo_id")
+  genreTags     String[]        @default([])
+  createdAt     DateTime        @default(now()) @map("created_at")
+  playlistSongs PlaylistSong[]
+  savedBy       UserSavedSong[]
+
+  @@map("songs")
+}
+
+model PlaylistSong {
+  id         String   @id @default(uuid())
+  playlistId String   @map("playlist_id")
+  songId     String   @map("song_id")
+  position   Int      @default(0)
+  addedAt    DateTime @default(now()) @map("added_at")
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, songId])
+  @@map("playlist_songs")
+}
+
+model UserSavedPlaylist {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  playlistId String   @map("playlist_id")
+  context    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, playlistId])
+  @@map("user_saved_playlists")
+}
+
+model UserSavedSong {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  songId    String   @map("song_id")
+  context   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, songId])
+  @@map("user_saved_songs")
+}
+
 enum FriendRequestStatus {
   PENDING
   ACCEPTED
   DECLINED
 }
 
-// ==================== MUSIC PLAYLIST SYSTEM ====================
-
-// Playlist model - Curated collections of songs for specific moods/wellness goals
-model Playlist {
-  id          String   @id @default(uuid())
-  title       String
-  description String?  @db.Text
-  mood        String   // e.g., "anxiety", "focus", "sleep", "relaxation"
-  createdBy   String?  @map("created_by") // FK to User (optional for system playlists)
-  verified    Boolean  @default(false) // Verified by healthcare professional
-  coverImage  String?  @map("cover_image") // URL to cover image
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  creator      User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  playlistSongs PlaylistSong[]
-
-  @@map("playlists")
-}
-
-// Song model - Individual tracks with metadata
-model Song {
-  id          String   @id @default(uuid())
-  title       String
-  artist      String
-  duration    Int      // Duration in seconds
-  audioUrl    String   @map("audio_url") // URL to audio file
-  albumArt    String?  @map("album_art") // URL to album artwork
-  jamendoId   String?  @unique @map("jamendo_id") // External Jamendo track ID
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  playlistSongs PlaylistSong[]
-
-  @@map("songs")
-}
-
-// PlaylistSong junction table - Many-to-many relationship between playlists and songs
-model PlaylistSong {
-  id         String   @id @default(uuid())
-  playlistId String   @map("playlist_id")
-  songId     String   @map("song_id")
-  position   Int      @default(0) // Track order in playlist
-  addedAt    DateTime @default(now()) @map("added_at")
-
-  // Relations
-  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
-
-  @@unique([playlistId, songId])
-  @@map("playlist_songs")
+enum PlaylistCategory {
+  ANXIETY_RELIEF
+  FOCUS_CONCENTRATION
+  SLEEP_RELAXATION
+  MOOD_BOOST
+  STRESS_RELIEF
+  MEDITATION
+  WORKOUT_ENERGY
+  GENERAL_WELLNESS
+  goal
+  genre
 }

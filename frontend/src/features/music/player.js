@@ -1,5 +1,65 @@
-// Music Player Module - Handles audio playback and playlist management
+// Music Player Module - Handles audio playback, personalization, and library management
 console.log('🎵 Music Player: Module file loaded!');
+
+const HEALTH_GOAL_METADATA = {
+    mental_wellness: {
+        title: 'Mental Wellness',
+        subtitle: 'Grounding mixes for balance and clarity',
+        moods: ['relaxation', 'focus']
+    },
+    stress_relief: {
+        title: 'Stress Relief',
+        subtitle: 'Ease tension with calming instrumentals',
+        moods: ['anxiety', 'relaxation']
+    },
+    sleep_improvement: {
+        title: 'Sleep Improvement',
+        subtitle: 'Gentle lullabies to drift into rest',
+        moods: ['sleep']
+    },
+    focus: {
+        title: 'Deep Focus',
+        subtitle: 'Ambient patterns for productive flow',
+        moods: ['focus']
+    },
+    meditation: {
+        title: 'Meditation Moments',
+        subtitle: 'Breath-aligned sound baths',
+        moods: ['relaxation']
+    },
+    exercise: {
+        title: 'Energizing Movement',
+        subtitle: 'High-vibe beats to get moving',
+        moods: ['energy']
+    },
+    anxiety_relief: {
+        title: 'Anxiety Relief',
+        subtitle: 'Soothing textures for steady breathing',
+        moods: ['anxiety', 'relaxation']
+    },
+    mood_boost: {
+        title: 'Mood Boost',
+        subtitle: 'Feel-good rhythms to lift your energy',
+        moods: ['energy', 'focus']
+    }
+};
+
+const SECTION_PLAYLIST_LIMIT = 3;
+
+const HEALTH_GOAL_ALIASES = {
+    mental_wellnes: 'mental_wellness'
+};
+
+const GENRE_PREFERENCE_ALIASES = {
+    'r&b': 'rnb',
+    'rhythm and blues': 'rnb',
+    'rnb': 'rnb',
+    'nature sounds': 'nature',
+    'nature sound': 'nature',
+    'nature': 'nature',
+    'rain sounds': 'nature',
+    'rain sound': 'nature'
+};
 
 class MusicPlayer {
     constructor() {
@@ -8,122 +68,361 @@ class MusicPlayer {
         this.currentTrack = null;
         this.currentTrackIndex = 0;
         this.isPlaying = false;
-        this.playlists = [];
+        this.sections = [];
+        this.userContext = window.musicareUserContext || null;
+        this.savedPlaylists = new Set();
+        this.savedSongs = new Set();
+        this.libraryLoaded = false;
 
         this.init();
     }
 
     init() {
-        console.log('🎵 Music Player: Initializing...');
-        console.log('🎵 Music Player: Setting up audio event listeners...');
-
-        // Set up audio element event listeners
         this.audio.addEventListener('ended', () => this.playNext());
         this.audio.addEventListener('timeupdate', () => this.updateProgress());
         this.audio.addEventListener('loadedmetadata', () => this.onTrackLoaded());
         this.audio.addEventListener('error', (e) => this.handleError(e));
 
-        console.log('🎵 Music Player: About to load playlists...');
-        // Load playlists from API
-        this.loadPlaylists();
+        this.setupGlobalListeners();
+        this.setupPlayerControls();
+        this.bootstrap();
     }
 
-    async loadPlaylists() {
-        try {
-            console.log('🎵 Music Player: Loading playlists from API...');
-            console.log('🎵 Music Player: Fetching from /api/playlists');
+    setupGlobalListeners() {
+        document.addEventListener('musicare:user-ready', (event) => {
+            this.userContext = event.detail;
+            this.initializeForUser();
+        });
 
-            const response = await fetch('/api/playlists');
-            console.log('🎵 Music Player: Response status:', response.status);
-            console.log('🎵 Music Player: Response ok:', response.ok);
+        window.addEventListener('musicare:library-changed', (event) => {
+            this.loadLibraryState(true).then(() => {
+                const source = event?.detail?.source;
+                if (source !== 'player' && this.sections.length) {
+                    this.renderSections();
+                }
+            });
+        });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('🎵 Music Player: API Error Response:', errorText);
-                throw new Error(`Failed to load playlists: ${response.status} ${response.statusText}`);
+        document.addEventListener('musicare:play-library-playlist', (event) => {
+            const playlist = event.detail?.playlist;
+            if (playlist) {
+                this.playLibraryPlaylist(playlist);
             }
+        });
 
-            const data = await response.json();
-            console.log('🎵 Music Player: Raw API response:', data);
-
-            this.playlists = data.playlists || [];
-            console.log('🎵 Music Player: Processed playlists:', this.playlists);
-            console.log(`🎵 Music Player: Loaded ${this.playlists.length} playlists`);
-
-            // If no playlists in database, show empty placeholders
-            if (this.playlists.length === 0) {
-                console.log('🎵 Music Player: No playlists found, showing empty state');
-                this.displayEmptyPlaylists();
-            } else {
-                console.log('🎵 Music Player: Displaying playlists');
-                // Display playlists with real data
-                this.displayPlaylists();
-
-                // Auto-select first playlist
-                this.selectPlaylist(this.playlists[0]);
+        document.addEventListener('musicare:play-library-song', (event) => {
+            const song = event.detail?.song;
+            if (song) {
+                this.playLibrarySong(song);
             }
-        } catch (error) {
-            console.error('🎵 Music Player: Error loading playlists:', error);
-            console.error('🎵 Music Player: Error details:', error.message);
-            this.showError('Failed to load playlists. Try populating the database first.');
+        });
+    }
+
+    bootstrap() {
+        if (this.userContext) {
+            this.initializeForUser();
+        } else {
+            this.renderEmptyState('Sign in to unlock personalized playlists tailored for you.');
+            this.updateStatus('Sign in to unlock personalized playlists.');
+            this.updateHomeSummary();
         }
     }
 
-    displayEmptyPlaylists() {
-        const container = document.querySelector('.playlists-grid');
-        if (!container) return;
+    buildSectionsConfig() {
+        const sections = [];
+        const goals = Array.isArray(this.userContext?.healthGoals)
+            ? [...new Set(this.userContext.healthGoals)]
+            : [];
+        const preferences = Array.isArray(this.userContext?.musicPreferences)
+            ? [...new Set(this.userContext.musicPreferences)]
+            : [];
 
-        // Clear existing content
-        container.innerHTML = '';
+        let resolvedGoalCount = 0;
+        let resolvedPrefCount = 0;
 
-        // Show empty placeholder cards
-        const emptyPlaylists = [
-            {
-                id: 'empty-1',
-                title: 'Anxiety Relief',
-                description: 'Calming melodies to ease tension and reduce anxiety',
-                mood: 'anxiety',
-                tracks: [],
-                trackCount: 0
-            },
-            {
-                id: 'empty-2',
-                title: 'Focus & Concentration',
-                description: 'Enhance productivity and mental clarity with ambient sounds',
-                mood: 'focus',
-                tracks: [],
-                trackCount: 0
-            },
-            {
-                id: 'empty-3',
-                title: 'Sleep & Relaxation',
-                description: 'Gentle sounds for peaceful rest and deep relaxation',
-                mood: 'sleep',
-                tracks: [],
-                trackCount: 0
+        goals.forEach(goal => {
+            const normalizedGoal = normalizeTag(goal);
+            if (!normalizedGoal) return;
+            const resolvedKey = HEALTH_GOAL_METADATA[normalizedGoal]
+                ? normalizedGoal
+                : HEALTH_GOAL_ALIASES[normalizedGoal];
+            if (!resolvedKey) return;
+            const meta = HEALTH_GOAL_METADATA[resolvedKey];
+            if (!meta) return;
+
+            sections.push({
+                id: `goal-${resolvedKey}`,
+                title: meta.title,
+                subtitle: meta.subtitle,
+                request: { goal: resolvedKey },
+                limit: SECTION_PLAYLIST_LIMIT,
+                analytics: { goal: resolvedKey }
+            });
+            resolvedGoalCount += 1;
+        });
+
+        preferences
+            .filter(Boolean)
+            .slice(0, 4)
+            .forEach(pref => {
+                const cleanPref = pref.trim();
+                if (!cleanPref) return;
+                const normalizedPref = normalizeTag(cleanPref);
+                if (!normalizedPref) return;
+                const resolvedGenre = GENRE_PREFERENCE_ALIASES[normalizedPref] || normalizedPref;
+
+                sections.push({
+                    id: `pref-${slugify(cleanPref)}`,
+                    title: `${cleanPref} Therapy Mix`,
+                    subtitle: `Because you love ${cleanPref}`,
+                    request: { genre: resolvedGenre },
+                    limit: SECTION_PLAYLIST_LIMIT,
+                    analytics: { preference: cleanPref }
+                });
+                resolvedPrefCount += 1;
+            });
+
+        if (!sections.length) {
+            sections.push({
+                id: 'mood-boosters',
+                title: 'Mood Boosters',
+                subtitle: 'Relaxation • Focus • Sleep',
+                request: { goal: 'mental_wellness' },
+                limit: SECTION_PLAYLIST_LIMIT
+            });
+        }
+
+        return {
+            sections,
+            goalCount: resolvedGoalCount,
+            prefCount: resolvedPrefCount
+        };
+    }
+
+    async initializeForUser() {
+        if (!this.userContext) return;
+
+        await this.loadLibraryState();
+        await this.loadPlaylistSections();
+    }
+
+    updateStatus(message) {
+        const statusEl = document.getElementById('playlist-status');
+        if (statusEl) {
+            statusEl.textContent = message;
+        }
+    }
+
+    updateHomeSummary(context = {}) {
+        const summary = document.getElementById('home-mood-summary');
+        if (!summary) return;
+
+        if (!this.userContext) {
+            summary.textContent = 'Sign in to receive personalized recommendations.';
+            return;
+        }
+
+        const goalCount = context.goalCount ?? (this.userContext.healthGoals?.length || 0);
+        const prefCount = context.prefCount ?? (this.userContext.musicPreferences?.length || 0);
+
+        const parts = [];
+        if (goalCount) {
+            parts.push(`${goalCount} health goal${goalCount > 1 ? 's' : ''}`);
+        }
+        if (prefCount) {
+            parts.push(`${prefCount} music taste${prefCount > 1 ? 's' : ''}`);
+        }
+
+        const basis = parts.length ? parts.join(' + ') : 'core wellness moods';
+        const name = this.userContext.displayName || this.userContext.email || 'you';
+        summary.textContent = `Personalized for ${name} • Based on ${basis}`;
+    }
+
+    async loadLibraryState(forceReload = false) {
+        if (!this.userContext?.id) return;
+        if (this.libraryLoaded && !forceReload) return;
+
+        try {
+            const response = await fetch(`/api/library?userId=${this.userContext.id}`);
+            if (!response.ok) {
+                throw new Error('Failed to load library');
             }
-        ];
 
-        emptyPlaylists.forEach((playlist, index) => {
-            const playlistCard = this.createPlaylistCard(playlist, index, true);
-            container.appendChild(playlistCard);
-        });
+            const data = await response.json();
+            this.savedPlaylists = new Set(
+                (data.savedPlaylists || []).map(entry => entry.playlist.id)
+            );
+            this.savedSongs = new Set(
+                (data.savedSongs || []).map(entry => entry.song.id)
+            );
+            this.libraryLoaded = true;
+        } catch (error) {
+            console.error('Unable to load library state:', error);
+        }
     }
 
-    displayPlaylists() {
-        const container = document.querySelector('.playlists-grid');
+    async loadPlaylistSections() {
+        if (!this.userContext) {
+            this.updateStatus('Loading your wellness profile...');
+            this.renderEmptyState('Sign in to view your personalized playlists.');
+            return;
+        }
+
+        this.updateStatus('Personalizing music for you...');
+        this.renderEmptyState('Building mixes tailored to your wellness goals...');
+
+        const { sections, goalCount, prefCount } = this.buildSectionsConfig();
+        this.updateHomeSummary({
+            goalCount,
+            prefCount
+        });
+
+        try {
+            const sectionResults = await Promise.all(
+                sections.map(cfg =>
+                    this.fetchSectionData(cfg).catch(error => {
+                        console.error('🎵 Music Player: Section load failed', cfg.id, error);
+                        return { ...cfg, playlists: [] };
+                    })
+                )
+            );
+
+            this.sections = sectionResults.filter(Boolean);
+            this.renderSections();
+
+            const firstPlaylist = this.sections.find(section => section.playlists?.length)?.playlists[0];
+            if (firstPlaylist) {
+                this.selectPlaylist(firstPlaylist);
+                const activeSections = this.sections.filter(section => section.playlists?.length).length;
+                this.updateStatus(`Curating ${activeSections || 1} personalized ${activeSections === 1 ? 'set' : 'sets'}.`);
+            } else {
+                this.updateStatus('No personalized playlists found yet. Try refreshing soon.');
+            }
+        } catch (error) {
+            console.error('🎵 Music Player: Error loading playlists:', error);
+            this.renderEmptyState('Unable to load playlists. Please try again.');
+            this.updateStatus('Unable to load playlists. Please try again.');
+            this.showError('Failed to load playlists. Please try again.');
+        }
+    }
+
+    async fetchSectionData(config) {
+        const params = new URLSearchParams();
+        params.append('limit', (config.limit || SECTION_PLAYLIST_LIMIT).toString());
+        const request = config.request || {};
+        Object.entries(request).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                params.append(key, value);
+            }
+        });
+
+        const response = await fetch(`/api/playlists?${params.toString()}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to load playlists');
+        }
+
+        const data = await response.json();
+        const playlists = data.playlists || [];
+        console.log('[MusicPlayer] Loaded playlists', {
+            section: config.id,
+            title: config.title,
+            request: Object.fromEntries(params.entries()),
+            count: playlists.length
+        });
+
+        return {
+            ...config,
+            playlists
+        };
+    }
+
+    renderSections() {
+        const container = document.getElementById('playlist-sections');
         if (!container) return;
 
-        // Clear existing content
         container.innerHTML = '';
 
-        this.playlists.forEach((playlist, index) => {
-            const playlistCard = this.createPlaylistCard(playlist, index);
-            container.appendChild(playlistCard);
+        this.sections.forEach(section => {
+            const sectionEl = document.createElement('div');
+            sectionEl.className = 'playlist-section';
+
+            sectionEl.innerHTML = `
+                <div class="playlist-section-header">
+                    <div>
+                        <h3>${section.title}</h3>
+                        ${section.subtitle ? `<p class="playlist-section-subtitle">${section.subtitle}</p>` : ''}
+                    </div>
+                </div>
+                <div class="playlist-carousel">
+                    <button class="carousel-arrow left" aria-label="Scroll left"><span>◀</span></button>
+                    <div class="playlists-track playlists-grid"></div>
+                    <button class="carousel-arrow right" aria-label="Scroll right"><span>▶</span></button>
+                </div>
+            `;
+
+            const grid = sectionEl.querySelector('.playlists-track');
+
+            if (!section.playlists.length) {
+                grid.innerHTML = `
+                    <div class="section-empty-state">
+                        No playlists available for this category yet.
+                    </div>
+                `;
+            } else {
+                section.playlists.forEach(playlist => {
+                    const card = this.createPlaylistCard(playlist);
+                    grid.appendChild(card);
+                });
+            }
+
+            container.appendChild(sectionEl);
+            this.setupCarousel(sectionEl);
         });
     }
 
-    createPlaylistCard(playlist, index, isEmpty = false) {
+    setupCarousel(sectionEl) {
+        const track = sectionEl.querySelector('.playlists-track');
+        if (!track) return;
+
+        const leftBtn = sectionEl.querySelector('.carousel-arrow.left');
+        const rightBtn = sectionEl.querySelector('.carousel-arrow.right');
+
+        const scrollAmount = track.clientWidth * 0.7;
+
+        const updateButtons = () => {
+            const maxScroll = track.scrollWidth - track.clientWidth;
+            if (leftBtn) {
+                leftBtn.disabled = track.scrollLeft <= 0;
+            }
+            if (rightBtn) {
+                rightBtn.disabled = track.scrollLeft >= maxScroll - 1;
+            }
+        };
+
+        leftBtn?.addEventListener('click', () => {
+            track.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        });
+
+        rightBtn?.addEventListener('click', () => {
+            track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        });
+
+        track.addEventListener('scroll', updateButtons, { passive: true });
+        updateButtons();
+    }
+
+    renderEmptyState(message) {
+        const container = document.getElementById('playlist-sections');
+        if (!container) return;
+        container.innerHTML = `
+            <div class="section-empty-state">
+                ${message}
+            </div>
+        `;
+    }
+
+    createPlaylistCard(playlist, isEmpty = false) {
         const card = document.createElement('div');
         card.className = 'playlist-card';
         card.dataset.playlistId = playlist.id;
@@ -131,44 +430,63 @@ class MusicPlayer {
         const moodClass = playlist.mood || 'default';
         const trackCount = playlist.trackCount || playlist.tracks?.length || 0;
         const tracks = playlist.tracks || [];
+        const isSaved = this.savedPlaylists.has(playlist.id);
+        const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
+        const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
 
         card.innerHTML = `
-      <div class="playlist-cover">
-        <div class="cover-gradient ${moodClass}"></div>
-        <div class="play-button ${isEmpty ? 'disabled' : ''}" data-playlist-index="${index}" style="${isEmpty ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </div>
-      </div>
-      <div class="playlist-info">
-        <h3>${playlist.title}</h3>
-        <p>${playlist.description || ''}</p>
-        <div class="playlist-stats">${trackCount} songs${trackCount > 0 ? ` • ${this.formatTotalDuration(tracks)}` : ''}</div>
-      </div>
-      <div class="playlist-tracks">
-        ${isEmpty || tracks.length === 0 ?
-                `<div class="track" style="opacity: 0.5; font-style: italic; text-align: center; padding: 2rem;">
-            <div class="track-info">
-              <div class="track-name">No songs yet. Click "Load Playlists" to fetch music.</div>
+            <div class="playlist-cover">
+                <div class="cover-gradient ${moodClass}" ${coverStyle}></div>
+        <div class="play-button ${isEmpty ? 'disabled' : ''}" style="${isEmpty ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
             </div>
-          </div>`
-                :
-                tracks.slice(0, 4).map(track => `
-            <div class="track">
-              <div class="track-info">
-                <div class="track-name">${track.title}</div>
-                <div class="track-artist">${track.artist}</div>
-              </div>
-              <div class="track-duration">${this.formatDuration(track.duration)}</div>
+            <div class="playlist-info">
+                <div class="playlist-info-header">
+                    <h3>${playlist.title}</h3>
+                    <span class="playlist-mood-pill">${formatMoodLabel(playlist.mood || 'wellness')}</span>
+                </div>
+                <p>${playlist.description || ''}</p>
+                <div class="playlist-stats">${trackCount} songs${trackCount > 0 ? ` • ${this.formatTotalDuration(tracks)}` : ''}</div>
+                ${!isEmpty ? `
+                <button class="save-playlist-btn ${isSaved ? 'saved' : ''}" data-playlist-id="${playlist.id}">
+                    ${isSaved ? '★ Saved' : '+ Save playlist'}
+                </button>` : ''}
             </div>
-          `).join('') +
-                (tracks.length > 4 ? `<div class="track"><div class="track-info"><div class="track-name">...and ${tracks.length - 4} more</div></div></div>` : '')
+            <div class="playlist-tracks">
+                ${isEmpty || tracks.length === 0 ?
+                `<div class="track empty-track">
+                        <div class="track-info">
+                            <div class="track-name">Personalized recommendations will appear here once your profile is ready.</div>
+                        </div>
+                    </div>` :
+                tracks.slice(0, 4).map(track => {
+                    const songSaved = this.savedSongs.has(track.id);
+                    return `
+                        <div class="track" data-track-id="${track.id}">
+                            <div class="track-info">
+                                <div class="track-name">${track.title}</div>
+                                <div class="track-artist">${track.artist}</div>
+                            </div>
+                            <div class="track-actions">
+                                <div class="track-duration">${this.formatDuration(track.duration)}</div>
+                                <button class="save-track-btn ${songSaved ? 'saved' : ''}" data-track-id="${track.id}">
+                                    ${songSaved ? '♥' : '♡'}
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('') +
+                (tracks.length > 4 ? `<div class="track more-tracks">
+                        <div class="track-info">
+                            <div class="track-name">...and ${tracks.length - 4} more wellness tracks</div>
+                        </div>
+                    </div>` : '')
             }
-      </div>
-    `;
+            </div>
+        `;
 
-        // Add click handler to play button (only if not empty)
         if (!isEmpty && tracks.length > 0) {
             const playButton = card.querySelector('.play-button');
             playButton.addEventListener('click', (e) => {
@@ -177,10 +495,25 @@ class MusicPlayer {
                 this.play();
             });
 
-            // Add click handler to track items
+            const savePlaylistBtn = card.querySelector('.save-playlist-btn');
+            if (savePlaylistBtn) {
+                savePlaylistBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.togglePlaylistSave(playlist);
+                });
+            }
+
             const trackElements = card.querySelectorAll('.track');
             trackElements.forEach((trackEl, trackIndex) => {
-                if (trackIndex < tracks.length) { // Only clickable tracks, not the "...and X more"
+                if (trackIndex < tracks.length) {
+                    const saveBtn = trackEl.querySelector('.save-track-btn');
+                    if (saveBtn) {
+                        saveBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.toggleSongSave(tracks[trackIndex]);
+                        });
+                    }
+
                     trackEl.addEventListener('click', () => {
                         this.selectPlaylist(playlist);
                         this.playTrack(trackIndex);
@@ -194,12 +527,10 @@ class MusicPlayer {
     }
 
     selectPlaylist(playlist) {
-        console.log('Selected playlist:', playlist.title);
+        if (!playlist?.tracks?.length) return;
         this.currentPlaylist = playlist;
         this.currentTrackIndex = 0;
         this.currentTrack = playlist.tracks[0];
-
-        // Update UI
         this.updatePlayerUI();
     }
 
@@ -211,8 +542,6 @@ class MusicPlayer {
 
         this.currentTrackIndex = index;
         this.currentTrack = this.currentPlaylist.tracks[index];
-
-        console.log('🎵 Playing track:', this.currentTrack.title);
 
         this.audio.src = this.currentTrack.audioUrl;
         this.audio.load();
@@ -266,36 +595,36 @@ class MusicPlayer {
     updatePlayerUI() {
         if (!this.currentTrack) return;
 
-        // Update track info
         const trackName = document.querySelector('.current-track-name');
         const trackArtist = document.querySelector('.current-track-artist');
 
         if (trackName) trackName.textContent = this.currentTrack.title;
         if (trackArtist) trackArtist.textContent = this.currentTrack.artist;
 
-        // Update cover art
         const miniCover = document.querySelector('.mini-cover');
         if (miniCover && this.currentPlaylist) {
-            miniCover.className = `mini-cover ${this.currentPlaylist.mood}`;
+            if (this.currentPlaylist.coverImage) {
+                miniCover.style.backgroundImage = `url('${this.currentPlaylist.coverImage}')`;
+                miniCover.className = 'mini-cover';
+            } else {
+                miniCover.style.backgroundImage = '';
+                miniCover.className = `mini-cover ${this.currentPlaylist.mood}`;
+            }
         }
     }
 
     updateProgress() {
         const progressFill = document.querySelector('.progress-fill');
-        const currentTimeEl = document.querySelector('.progress-time:first-child');
-        const totalTimeEl = document.querySelector('.progress-time:last-child');
+        const progressTimes = document.querySelectorAll('.progress-time');
 
         if (progressFill && this.audio.duration) {
             const percent = (this.audio.currentTime / this.audio.duration) * 100;
             progressFill.style.width = `${percent}%`;
         }
 
-        if (currentTimeEl) {
-            currentTimeEl.textContent = this.formatDuration(Math.floor(this.audio.currentTime));
-        }
-
-        if (totalTimeEl && this.audio.duration) {
-            totalTimeEl.textContent = this.formatDuration(Math.floor(this.audio.duration));
+        if (progressTimes.length >= 2) {
+            progressTimes[0].textContent = this.formatDuration(Math.floor(this.audio.currentTime));
+            progressTimes[1].textContent = this.formatDuration(Math.floor(this.audio.duration));
         }
     }
 
@@ -305,21 +634,20 @@ class MusicPlayer {
 
         if (this.isPlaying) {
             playPauseBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-        </svg>
-      `;
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+            `;
         } else {
             playPauseBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
-      `;
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            `;
         }
     }
 
     onTrackLoaded() {
-        console.log('🎵 Track loaded:', this.currentTrack?.title);
         this.updateProgress();
     }
 
@@ -348,83 +676,219 @@ class MusicPlayer {
         toast.className = 'toast toast-error';
         toast.textContent = message;
         toast.style.cssText = `
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      background: #ef4444;
-      color: white;
-      font-weight: 500;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-      max-width: 300px;
-    `;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            background: #ef4444;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        `;
 
         document.body.appendChild(toast);
 
         setTimeout(() => {
             toast.remove();
-        }, 5000);
+        }, 4000);
+    }
+
+    /**
+     * Update Playlist Save Buttons
+     *
+     * Updates the save button state for a specific playlist without re-rendering everything.
+     *
+     * @function updatePlaylistSaveButtons
+     * @param {string} playlistId - ID of the playlist to update buttons for
+     */
+    updatePlaylistSaveButtons(playlistId) {
+        const isSaved = this.savedPlaylists.has(playlistId);
+        const buttons = document.querySelectorAll(`[data-playlist-id="${playlistId}"] .save-playlist-btn`);
+
+        buttons.forEach(button => {
+            button.className = `save-playlist-btn ${isSaved ? 'saved' : ''}`;
+            button.textContent = isSaved ? '★ Saved' : '+ Save playlist';
+        });
+    }
+
+    async togglePlaylistSave(playlist) {
+        if (!this.userContext?.id) {
+            this.showError('Sign in to save playlists to your library.');
+            return;
+        }
+
+        const isSaved = this.savedPlaylists.has(playlist.id);
+        const url = isSaved
+            ? `/api/library?userId=${this.userContext.id}&itemId=${playlist.id}&itemType=playlist`
+            : '/api/library';
+
+        const options = isSaved
+            ? { method: 'DELETE' }
+            : {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: this.userContext.id,
+                    itemId: playlist.id,
+                    itemType: 'playlist'
+                })
+            };
+
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error('Failed to update playlist');
+            }
+
+            if (isSaved) {
+                this.savedPlaylists.delete(playlist.id);
+            } else {
+                this.savedPlaylists.add(playlist.id);
+            }
+
+            // Update only the specific playlist buttons instead of re-rendering everything
+            this.updatePlaylistSaveButtons(playlist.id);
+
+            window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                detail: { entityType: 'playlist', entityId: playlist.id, source: 'player' }
+            }));
+        } catch (error) {
+            console.error('Unable to update playlist save state:', error);
+            this.showError('Unable to update playlist. Please try again.');
+        }
+    }
+
+    /**
+     * Update Song Save Buttons
+     *
+     * Updates the save button state for a specific song without re-rendering everything.
+     *
+     * @function updateSongSaveButtons
+     * @param {string} trackId - ID of the track to update buttons for
+     */
+    updateSongSaveButtons(trackId) {
+        const isSaved = this.savedSongs.has(trackId);
+        const buttons = document.querySelectorAll(`[data-track-id="${trackId}"] .save-track-btn`);
+
+        buttons.forEach(button => {
+            button.className = `save-track-btn ${isSaved ? 'saved' : ''}`;
+            button.textContent = isSaved ? '♥' : '♡';
+        });
+    }
+
+    async toggleSongSave(track) {
+        if (!this.userContext?.id) {
+            this.showError('Sign in to save songs to your library.');
+            return;
+        }
+
+        const isSaved = this.savedSongs.has(track.id);
+        const url = isSaved
+            ? `/api/library?userId=${this.userContext.id}&itemId=${track.id}&itemType=song`
+            : '/api/library';
+
+        const options = isSaved
+            ? { method: 'DELETE' }
+            : {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: this.userContext.id,
+                    itemId: track.id,
+                    itemType: 'song'
+                })
+            };
+
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error('Failed to update song');
+            }
+
+            if (isSaved) {
+                this.savedSongs.delete(track.id);
+            } else {
+                this.savedSongs.add(track.id);
+            }
+
+            // Update only the specific song buttons instead of re-rendering everything
+            this.updateSongSaveButtons(track.id);
+
+            window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                detail: { entityType: 'song', entityId: track.id, source: 'player' }
+            }));
+        } catch (error) {
+            console.error('Unable to update song save state:', error);
+            this.showError('Unable to update song. Please try again.');
+        }
+    }
+
+    playLibraryPlaylist(playlist) {
+        if (!playlist?.tracks?.length) {
+            this.showError('This playlist has no playable tracks yet.');
+            return;
+        }
+
+        const normalized = {
+            ...playlist,
+            tracks: playlist.tracks.map((track, index) => ({
+                ...track,
+                position: track.position ?? index
+            })),
+            trackCount: playlist.tracks.length
+        };
+
+        this.selectPlaylist(normalized);
+        this.playTrack(0);
+    }
+
+    playLibrarySong(song) {
+        if (!song?.audioUrl) {
+            this.showError('This song is missing audio data.');
+            return;
+        }
+
+        const singlePlaylist = {
+            id: `library-song-${song.id}`,
+            title: song.title || 'Saved Song',
+            description: song.artist || '',
+            mood: 'wellness',
+            coverImage: song.albumArt,
+            tracks: [{
+                ...song,
+                position: 0
+            }],
+            trackCount: 1
+        };
+
+        this.selectPlaylist(singlePlaylist);
+        this.playTrack(0);
     }
 
     async populatePlaylists() {
-        const statusEl = document.getElementById('playlist-status');
-        const btn = document.getElementById('populate-playlists-btn');
-
-        if (statusEl) statusEl.textContent = 'Loading playlists from Jamendo API...';
-        if (btn) btn.disabled = true;
-
-        try {
-            console.log('Populating database with playlists...');
-            const response = await fetch('/api/playlists?populate=true');
-
-            if (!response.ok) {
-                throw new Error('Failed to populate playlists');
-            }
-
-            const data = await response.json();
-            console.log('Playlists populated:', data);
-
-            if (statusEl) statusEl.textContent = `Loaded ${data.count} playlists with real music!`;
-
-            // Reload playlists
-            await this.loadPlaylists();
-
-        } catch (error) {
-            console.error('Error populating playlists:', error);
-            if (statusEl) statusEl.textContent = 'Failed to load playlists. Check console for details.';
-        } finally {
-            if (btn) btn.disabled = false;
-        }
+        return this.loadPlaylistSections();
     }
 
     setupPlayerControls() {
-        // Populate playlists button
-        const populateBtn = document.getElementById('populate-playlists-btn');
-        if (populateBtn) {
-            populateBtn.addEventListener('click', () => this.populatePlaylists());
+        const refreshBtn = document.getElementById('populate-playlists-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadPlaylistSections());
         }
 
-        // Play/Pause button
         const playPauseBtn = document.querySelector('.play-pause');
         if (playPauseBtn) {
             playPauseBtn.addEventListener('click', () => this.togglePlayPause());
         }
 
-        // Previous button
-        const prevBtn = document.querySelector('.control-btn:first-child');
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => this.playPrevious());
+        const controlBtns = document.querySelectorAll('.player-controls .control-btn');
+        if (controlBtns.length >= 3) {
+            controlBtns[0].addEventListener('click', () => this.playPrevious());
+            controlBtns[2].addEventListener('click', () => this.playNext());
         }
 
-        // Next button
-        const nextBtn = document.querySelector('.control-btn:last-child');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => this.playNext());
-        }
-
-        // Progress bar click
         const progressBar = document.querySelector('.progress-bar');
         if (progressBar) {
             progressBar.addEventListener('click', (e) => {
@@ -435,7 +899,6 @@ class MusicPlayer {
             progressBar.style.cursor = 'pointer';
         }
 
-        // Volume control
         const volumeBar = document.querySelector('.volume-bar');
         if (volumeBar) {
             volumeBar.addEventListener('click', (e) => {
@@ -453,33 +916,51 @@ class MusicPlayer {
     }
 }
 
+function formatMoodLabel(mood) {
+    if (!mood) return 'Wellness';
+    const labels = {
+        anxiety: 'Calm & Relief',
+        focus: 'Focus',
+        sleep: 'Sleep',
+        relaxation: 'Relaxation',
+        energy: 'Energy'
+    };
+    return labels[mood] || mood.charAt(0).toUpperCase() + mood.slice(1);
+}
+
+function slugify(value) {
+    return (value || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'section';
+}
+
+function normalizeTag(value) {
+    return (value || '')
+        .toString()
+        .trim()
+        .toLowerCase();
+}
+
 // Initialize music player when DOM is ready
 let musicPlayer;
 
-console.log('🎵 Music Player: Module loaded, checking DOM state...');
-console.log('🎵 Music Player: Document ready state:', document.readyState);
-
 function initializeMusicPlayer() {
     try {
-        console.log('🎵 Music Player: Starting initialization...');
         musicPlayer = new MusicPlayer();
-        musicPlayer.setupPlayerControls();
-
-        // Make it globally available
         window.musicPlayer = musicPlayer;
-
         console.log('🎵 Music Player: Successfully initialized');
     } catch (error) {
         console.error('🎵 Music Player: Initialization failed:', error);
     }
 }
 
-// Initialize immediately if DOM is already ready, otherwise wait for DOMContentLoaded
 if (document.readyState === 'loading') {
-    console.log('🎵 Music Player: DOM still loading, waiting for DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', initializeMusicPlayer);
 } else {
-    console.log('🎵 Music Player: DOM already ready, initializing immediately...');
     initializeMusicPlayer();
 }
 

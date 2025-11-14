@@ -7,6 +7,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../config/firebase.js';
 import '../features/friends/index.js'; // Import friend system
+import LibraryView from '../features/music/library.js';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -26,6 +27,7 @@ onAuthStateChanged(auth, (user) => {
 
         // Set up sign out button
         signOutBtn.addEventListener('click', handleSignOut);
+        bootstrapUserProfile(user);
     } else {
         // User is signed out, redirect to login
         window.location.href = '../index.html';
@@ -45,17 +47,20 @@ async function handleSignOut() {
 
 // Tab navigation
 const navItems = document.querySelectorAll('.nav-item[data-tab]');
-let currentTab = null;
+let currentTab = 'home';
+let libraryView = null;
 
 function showTab(tabId) {
     // Get the main content area
     const mainContent = document.querySelector('.main-content');
 
-    // Hide all content sections and remove them from the DOM
+    // Hide all content sections
     const existingSections = document.querySelectorAll('.content-section');
     existingSections.forEach(section => {
-        if (section.id !== `${tabId}-content`) {
-            section.remove();
+        if (section.id === `${tabId}-content`) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
         }
     });
 
@@ -75,13 +80,7 @@ function showTab(tabId) {
             contentSection.id = `${tabId}-content`;
             contentSection.className = 'content-section';
 
-            // Insert the content section after the welcome message or at the beginning of main content
-            const welcomeMessage = document.querySelector('.welcome-message');
-            if (welcomeMessage && welcomeMessage.nextSibling) {
-                welcomeMessage.parentNode.insertBefore(contentSection, welcomeMessage.nextSibling);
-            } else {
-                mainContent.insertBefore(contentSection, mainContent.firstChild);
-            }
+            mainContent.appendChild(contentSection);
         }
     }
 
@@ -107,6 +106,10 @@ function showTab(tabId) {
     }
 
     currentTab = tabId;
+
+    document.dispatchEvent(new CustomEvent('musicare:tab-shown', {
+        detail: { tabId }
+    }));
 }
 
 // Initialize tab navigation
@@ -123,13 +126,13 @@ navItems.forEach(item => {
 
 // Handle browser back/forward
 window.addEventListener('popstate', (e) => {
-    const tabId = e.state?.tab || 'about';
+    const tabId = e.state?.tab || 'home';
     showTab(tabId);
 });
 
-// Show initial tab from URL or default to 'about'
+// Show initial tab from URL or default to 'home'
 const urlParams = new URLSearchParams(window.location.search);
-const initialTab = urlParams.get('tab') || 'about';
+const initialTab = urlParams.get('tab') || 'home';
 showTab(initialTab);
 
 // Import and initialize music player
@@ -137,4 +140,96 @@ import '../features/music/player.js';
 
 // Initialize any other app-specific functionality here
 console.log('App initialized');
+
+document.addEventListener('musicare:user-ready', (event) => {
+    if (!libraryView) {
+        libraryView = new LibraryView();
+    }
+    libraryView.setUserContext(event.detail);
+});
+
+document.addEventListener('musicare:tab-shown', (event) => {
+    if (event.detail?.tabId === 'library' && libraryView) {
+        // Small delay to ensure DOM is ready after tab switch
+        setTimeout(() => {
+            libraryView.mount();
+        }, 50);
+    }
+});
+
+async function bootstrapUserProfile(user) {
+    if (!user) return;
+
+    try {
+        const profile = await loadUserProfile(user);
+        const mergedProfile = {
+            ...profile,
+            firebase: {
+                uid: user.uid,
+                email: user.email
+            }
+        };
+
+        window.musicareUserContext = mergedProfile;
+        document.dispatchEvent(new CustomEvent('musicare:user-ready', {
+            detail: mergedProfile
+        }));
+
+        logUserProfile(mergedProfile);
+    } catch (error) {
+        console.error('Failed to load user profile:', error);
+    }
+}
+
+async function loadUserProfile(user) {
+    const params = new URLSearchParams();
+    if (user.email) params.append('email', user.email);
+    if (user.uid) params.append('firebaseUid', user.uid);
+
+    const response = await fetch(`/api/users?${params.toString()}`);
+
+    if (response.status === 404) {
+        await createUserProfile(user);
+        return loadUserProfile(user);
+    }
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Unable to load user profile');
+    }
+
+    const data = await response.json();
+    return data.user;
+}
+
+async function createUserProfile(user) {
+    const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            email: user.email,
+            displayName: user.displayName || user.email?.split('@')[0] || 'Musicare Listener'
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Unable to create user profile');
+    }
+}
+
+function logUserProfile(profile) {
+    if (!profile) return;
+
+    console.groupCollapsed('🎧 Musicare user profile loaded');
+    console.log('User ID:', profile.id);
+    console.log('Email:', profile.email);
+    console.log('Display Name:', profile.displayName);
+    console.log('Health Goals:', profile.healthGoals?.length ? profile.healthGoals : '(none)');
+    console.log('Music Preferences:', profile.musicPreferences?.length ? profile.musicPreferences : '(none)');
+    console.log('Daily Listening Goal:', profile.dailyListeningGoal ?? '(unset)');
+    console.groupEnd();
+}
 

@@ -95,7 +95,8 @@ export async function searchTracks(options = {}) {
         tags = 'calm',
         limit = 10,
         order = 'popularity_week',
-        audioformat = 'mp32'
+        audioformat = 'mp32',
+        offset = 0
     } = options;
 
     try {
@@ -118,7 +119,9 @@ export async function searchTracks(options = {}) {
             limit: limit.toString(),
             tags: tags.trim(),
             order: order,
-            audioformat: audioformat
+            audioformat: audioformat,
+            include: 'musicinfo',
+            offset: offset.toString()
         });
 
         const url = `${JAMENDO_API_BASE}/tracks/?${params}`;
@@ -162,6 +165,7 @@ export async function searchTracks(options = {}) {
                 jamendoId: track.id,
                 title: track.name || 'Unknown Title',
                 artist: track.artist_name || 'Unknown Artist',
+                albumName: track.album_name || null,
                 duration: parseInt(track.duration) || 0, // Ensure integer seconds
                 audioUrl: track.audio || track.audiodownload || null,
                 albumArt: track.image || track.album_image || 'https://via.placeholder.com/300x300/4a90e2/ffffff?text=Music',
@@ -170,7 +174,8 @@ export async function searchTracks(options = {}) {
                 releaseDate: track.releasedate || null,
                 tags: track.musicinfo?.tags || [],
                 bpm: track.musicinfo?.bpm || null,
-                genre: track.musicinfo?.genre || null
+                genre: track.musicinfo?.genre || null,
+                genres: extractTrackGenres(track)
             }));
 
             console.log(`✅ Jamendo API: Successfully transformed ${transformedTracks.length} tracks`);
@@ -227,61 +232,56 @@ export async function searchTracks(options = {}) {
 export async function getTherapeuticPlaylists() {
     console.log('🎵 Jamendo API: Generating therapeutic playlists...');
 
-    // Curated playlist configurations for different therapeutic needs
-    const playlistConfigs = [
+    // Default category seeds for backward compatibility and initial population
+    const DEFAULT_CATEGORY_SEEDS = [
         {
             mood: 'anxiety',
             title: 'Anxiety Relief',
-            description: 'Calming melodies to ease tension and reduce anxiety. Carefully selected tracks with slower tempos and soothing harmonies.',
-            tags: 'chill',  // Relaxing but not too slow
-            limit: 12,
-            category: 'mental-health',
-            targetBpm: '60-90',
-            duration: 'medium'
+            description: 'Calming melodies to ease tension and reduce anxiety',
+            tags: ['chill'],
+            limit: 12
         },
         {
             mood: 'focus',
             title: 'Focus & Concentration',
-            description: 'Enhance productivity and mental clarity with ambient instrumental sounds. Non-distracting background music for work and study.',
-            tags: 'instrumental',  // Pure instrumental focus music
-            limit: 15,
-            category: 'productivity',
-            targetBpm: '70-120',
-            duration: 'long'
+            description: 'Enhance productivity and mental clarity with ambient sounds',
+            tags: ['instrumental'],
+            limit: 15
         },
         {
             mood: 'sleep',
             title: 'Sleep & Relaxation',
-            description: 'Gentle ambient sounds for peaceful rest and deep relaxation. Soft, slow-tempo tracks to promote natural sleep cycles.',
-            tags: 'ambient',  // Soft ambient music for sleep
-            limit: 10,
-            category: 'wellness',
-            targetBpm: '40-70',
-            duration: 'short'
+            description: 'Gentle sounds for peaceful rest and deep relaxation',
+            tags: ['ambient'],
+            limit: 10
         },
         {
-            mood: 'meditation',
-            title: 'Mindfulness & Meditation',
-            description: 'Serene soundscapes for meditation, mindfulness practice, and spiritual reflection.',
-            tags: 'meditation',
-            limit: 8,
-            category: 'spiritual',
-            targetBpm: '50-80',
-            duration: 'variable'
+            mood: 'genre_rock',
+            title: 'Rock Therapy',
+            description: 'Guitar-driven anthems to boost confidence and energy',
+            tags: ['rock'],
+            limit: 18
+        },
+        {
+            mood: 'genre_rnb',
+            title: 'Smooth R&B Comfort',
+            description: 'Soulful vocals and warm grooves for emotional balance',
+            tags: ['rnb', 'soul'],
+            limit: 18
         }
     ];
 
     try {
-        console.log(`🎵 Jamendo API: Fetching tracks for ${playlistConfigs.length} therapeutic playlists...`);
+        console.log(`🎵 Jamendo API: Fetching tracks for ${DEFAULT_CATEGORY_SEEDS.length} therapeutic playlists...`);
 
         // Fetch tracks for each playlist configuration with error handling
         const playlistsWithTracks = await Promise.allSettled(
-            playlistConfigs.map(async (config, index) => {
+            DEFAULT_CATEGORY_SEEDS.map(async (config, index) => {
                 try {
-                    console.log(`🎵 Jamendo API: Fetching playlist ${index + 1}/${playlistConfigs.length} - ${config.title}`);
+                    console.log(`🎵 Jamendo API: Fetching playlist ${index + 1}/${DEFAULT_CATEGORY_SEEDS.length} - ${config.title}`);
 
                     const tracks = await searchTracks({
-                        tags: config.tags,
+                        tags: config.tags.join('+'),
                         limit: config.limit,
                         order: 'popularity_week'
                     });
@@ -291,9 +291,6 @@ export async function getTherapeuticPlaylists() {
                         mood: config.mood,
                         title: config.title,
                         description: config.description,
-                        category: config.category,
-                        targetBpm: config.targetBpm,
-                        duration: config.duration,
                         tags: config.tags,
                         tracks: tracks,
                         trackCount: tracks.length,
@@ -337,13 +334,13 @@ export async function getTherapeuticPlaylists() {
                 console.error(`🚨 Jamendo API: Playlist ${index + 1} failed:`, result.reason);
                 failedPlaylists.push({
                     index,
-                    config: playlistConfigs[index],
+                    config: DEFAULT_CATEGORY_SEEDS[index],
                     error: result.reason.message
                 });
             }
         });
 
-        console.log(`✅ Jamendo API: Successfully generated ${successfulPlaylists.length}/${playlistConfigs.length} therapeutic playlists`);
+        console.log(`✅ Jamendo API: Successfully generated ${successfulPlaylists.length}/${DEFAULT_CATEGORY_SEEDS.length} therapeutic playlists`);
 
         if (failedPlaylists.length > 0) {
             console.warn(`⚠️ Jamendo API: ${failedPlaylists.length} playlists failed to generate`);
@@ -464,6 +461,7 @@ export async function getTrackById(trackId) {
             jamendoId: track.id,
             title: track.name || 'Unknown Title',
             artist: track.artist_name || 'Unknown Artist',
+            albumName: track.album_name || null,
             duration: parseInt(track.duration) || 0,
             audioUrl: track.audio || track.audiodownload || null,
             albumArt: track.image || track.album_image || 'https://via.placeholder.com/300x300/4a90e2/ffffff?text=Music',
@@ -477,6 +475,7 @@ export async function getTrackById(trackId) {
             tags: track.musicinfo?.tags || [],
             bpm: track.musicinfo?.bpm || null,
             genre: track.musicinfo?.genre || null,
+            genres: extractTrackGenres(track),
             instruments: track.musicinfo?.instruments || [],
             vocalInstrumental: track.musicinfo?.vocalinstrumental || null,
             lang: track.musicinfo?.lang || null,
@@ -569,5 +568,217 @@ export const JamendoUtils = {
         };
     }
 };
+
+// ==================== CATEGORY-BASED PLAYLIST GENERATION ====================
+
+/**
+ * Category configuration for health goals and music genres
+ * Maps user preferences to specific Jamendo tags and playlist metadata
+ * @constant {Object}
+ */
+export const CATEGORY_CONFIG = {
+    goal: {
+        mental_wellness: {
+            tags: ['relax', 'meditation'],
+            mood: 'relaxation',
+            title: 'Mental Wellness',
+            description: 'Gentle soundscapes to restore inner balance.'
+        },
+        stress_relief: {
+            tags: ['calm', 'soothing'],
+            mood: 'relaxation',
+            title: 'Stress Relief',
+            description: 'Slow, tension-free tones for steady breathing.'
+        },
+        sleep_improvement: {
+            tags: ['sleep', 'ambient'],
+            mood: 'sleep',
+            title: 'Sleep Improvement',
+            description: 'Soft lullabies to ease you into deep rest.'
+        },
+        focus: {
+            tags: ['focus', 'instrumental'],
+            mood: 'focus',
+            title: 'Deep Focus',
+            description: 'Minimal melodies to support concentration.'
+        },
+        meditation: {
+            tags: ['meditation', 'newage'],
+            mood: 'relaxation',
+            title: 'Meditation Moments',
+            description: 'Breath-aligned drones and bowls.'
+        },
+        exercise: {
+            tags: ['fitness', 'energy'],
+            mood: 'energy',
+            title: 'Energizing Movement',
+            description: 'High-vibe beats to get the body moving.'
+        },
+        anxiety_relief: {
+            tags: ['calm', 'piano'],
+            mood: 'relaxation',
+            title: 'Anxiety Relief',
+            description: 'Warm piano and strings to settle nerves.'
+        },
+        mood_boost: {
+            tags: ['happy', 'uplifting'],
+            mood: 'energy',
+            title: 'Mood Boost',
+            description: 'Feel-good rhythms to elevate your mindset.'
+        }
+    },
+    genre: {
+        rock: {
+            tags: ['rock', 'guitar', 'energetic'],
+            mood: 'energy',
+            title: 'Rock Therapy',
+            description: 'Guitar-driven anthems to boost confidence.'
+        },
+        rnb: {
+            tags: ['rnb', 'soul', 'funk'],
+            mood: 'relaxation',
+            title: 'Smooth R&B Comfort',
+            description: 'Soulful grooves for emotional balance.'
+        },
+        nature: {
+            tags: ['nature'],
+            mood: 'sleep',
+            title: 'Nature Soundscapes',
+            description: 'Birdsong, rain and forests for deep calm.'
+        }
+    }
+};
+
+/**
+ * Genre aliases for mapping user input to standardized categories
+ * @constant {Object}
+ */
+export const GENRE_ALIASES = {
+    'r&b': 'rnb',
+    'rhythm and blues': 'rnb',
+    'rnb': 'rnb',
+    'nature sounds': 'nature',
+    'nature sound': 'nature',
+    'nature': 'nature',
+    'rain sounds': 'nature',
+    'ambient nature': 'nature'
+};
+
+/**
+ * Fetch Category-Based Playlists
+ *
+ * Generates multiple playlists based on user health goals or music genre preferences.
+ * Uses intelligent track fetching with pagination to ensure variety.
+ *
+ * @async
+ * @function fetchCategoryPlaylists
+ * @param {Object} options - Configuration options
+ * @param {string} options.categoryType - Type of category ('goal' or 'genre')
+ * @param {string} options.categoryKey - Specific category key
+ * @param {number} [options.minPlaylists=3] - Minimum number of playlists to generate
+ * @param {number} [options.tracksPerPlaylist=8] - Number of tracks per playlist
+ * @returns {Promise<Array>} Array of generated playlists with tracks
+ * @throws {Error} Unknown category configuration
+ */
+export async function fetchCategoryPlaylists({ categoryType, categoryKey, minPlaylists = 3, tracksPerPlaylist = 8 }) {
+    const config = CATEGORY_CONFIG[categoryType]?.[categoryKey];
+    if (!config) {
+        throw new Error(`Unknown category ${categoryType}:${categoryKey}`);
+    }
+
+    const requiredTracks = minPlaylists * tracksPerPlaylist * 2; // Fetch extra for variety
+    let fetchedTracks = [];
+    let offset = 0;
+    const pageSize = 50;
+    const tagQuery = config.tags.join('+');
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    // Fetch tracks with pagination
+    while (fetchedTracks.length < requiredTracks && attempts < maxAttempts) {
+        const batch = await searchTracks({
+            tags: tagQuery,
+            limit: pageSize,
+            offset
+        });
+
+        if (!batch.length) {
+            break;
+        }
+
+        fetchedTracks = fetchedTracks.concat(batch);
+        offset += batch.length;
+        attempts += 1;
+    }
+
+    // Generate playlists from fetched tracks
+    const playlists = [];
+    for (let i = 0; i < fetchedTracks.length; i += tracksPerPlaylist) {
+        const slice = fetchedTracks.slice(i, i + tracksPerPlaylist);
+        if (slice.length < Math.max(3, tracksPerPlaylist / 2)) break;
+
+        const firstTrack = slice[0];
+        let dynamicTitle = firstTrack?.albumName?.trim();
+        if (!dynamicTitle) {
+            const artistName = firstTrack?.artist || 'Mix';
+            dynamicTitle = `${config.title} • ${artistName}`;
+        }
+
+        playlists.push({
+            title: dynamicTitle,
+            description: config.description,
+            mood: config.mood,
+            tags: config.tags,
+            category: categoryType,
+            categoryKey,
+            tracks: slice
+        });
+
+        if (playlists.length >= minPlaylists) break;
+    }
+
+    return playlists;
+}
+
+/**
+ * Extract Track Genres
+ *
+ * Extracts and normalizes genre tags from Jamendo track data.
+ * Combines various tag sources into a clean array of genre strings.
+ *
+ * @function extractTrackGenres
+ * @param {Object} track - Raw track data from Jamendo API
+ * @returns {Array<string>} Array of normalized genre tags
+ */
+function extractTrackGenres(track) {
+    const tags = new Set();
+
+    const push = (values) => {
+        if (!values) return;
+        values.forEach(value => {
+            if (value && typeof value === 'string') {
+                const cleaned = value.trim().toLowerCase();
+                if (cleaned) {
+                    tags.add(cleaned);
+                }
+            }
+        });
+    };
+
+    // Add direct track tags
+    push(track.tags);
+
+    // Add musicinfo tags if available
+    const musicinfo = track.musicinfo || {};
+    if (Array.isArray(musicinfo.tags)) {
+        push(musicinfo.tags);
+    } else if (typeof musicinfo.tags === 'object') {
+        push(musicinfo.tags.genres);
+        push(musicinfo.tags.instruments);
+        push(musicinfo.tags.vartags);
+    }
+
+    return Array.from(tags);
+}
 
 

@@ -27,9 +27,13 @@
  * }
  */
 
-// API endpoint for playlist operations
+// API endpoint for playlist operations (category aware)
 import { prisma } from '../lib/prisma.js';
-import { getTherapeuticPlaylists } from '../lib/jamendo.js';
+import { getTherapeuticPlaylists, fetchCategoryPlaylists, CATEGORY_CONFIG, GENRE_ALIASES } from '../lib/jamendo.js';
+
+const DEFAULT_PLAYLIST_LIMIT = 3;
+const CATEGORY_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const TRACKS_PER_PLAYLIST = 8;
 
 /**
  * GET Request Handler - Retrieve Playlists
@@ -62,10 +66,12 @@ import { getTherapeuticPlaylists } from '../lib/jamendo.js';
 async function getPlaylists(req, res) {
   console.log('🎵 Playlists API: GET request received');
 
-  const { mood, populate } = req.query;
+  const { mood, populate, limit, userId, firebaseUid, email, goal, genre } = req.query;
   console.log('🎵 Playlists API: Query params -', {
     mood: mood || 'all moods',
-    populate: populate === 'true' ? 'yes' : 'no'
+    populate: populate === 'true' ? 'yes' : 'no',
+    goal: goal || 'none',
+    genre: genre || 'none'
   });
 
   /**
@@ -84,12 +90,68 @@ async function getPlaylists(req, res) {
     console.log('🎵 Playlists API: Fetching playlists from database...');
 
     /**
-     * Build database query with optional mood filtering
+     * Build database query with optional filtering
      *
-     * Mood filtering allows users to find playlists that match their
-     * current emotional state or therapeutic needs.
+     * Priority order:
+     * 1. First check database for existing playlists
+     * 2. If no results and goal/genre specified, generate dynamic playlists
+     * 3. Support mood filtering for therapeutic needs
      */
-    const where = mood ? { mood } : {};
+    let where = {};
+
+    // Add mood filter if specified
+    if (mood) {
+      where.mood = mood;
+    }
+
+    // Add category filters if goal or genre specified
+    const categoryType = goal ? 'goal' : genre ? 'genre' : null;
+    const categoryKeyRaw = goal || genre;
+
+    if (categoryType && categoryKeyRaw) {
+      // Map health goals to populated playlist moods
+      const goalToMoodMap = {
+        'mental_wellness': ['anxiety', 'focus', 'sleep'],
+        'stress_relief': ['anxiety', 'sleep'],
+        'focus_enhancement': ['focus'],
+        'sleep_improvement': ['sleep'],
+        'mood_boost': ['anxiety', 'focus']
+      };
+
+      // Map genre preferences to populated playlist moods
+      const genreToMoodMap = {
+        'rock': ['genre_rock'],
+        'rnb': ['genre_rnb'],
+        'r&b': ['genre_rnb'],
+        'rb': ['genre_rnb']
+      };
+
+      const mappedMoods = categoryType === 'goal'
+        ? goalToMoodMap[categoryKeyRaw] || []
+        : genreToMoodMap[categoryKeyRaw] || [];
+
+      // First try to find existing playlists that match the category
+      const orConditions = [];
+
+      // Add mood filter if specified directly
+      if (mood) {
+        orConditions.push({ mood });
+      }
+
+      // Add mapped moods for goals/genres
+      if (mappedMoods.length > 0) {
+        orConditions.push({ mood: { in: mappedMoods } });
+      }
+
+      // Add category match for dynamic playlists
+      orConditions.push({ category: categoryType, categoryKey: categoryKeyRaw });
+
+      where = {
+        ...where,
+        OR: orConditions
+      };
+    }
+
     console.log('🎵 Playlists API: Database query filter -', where);
 
     const playlists = await prisma.playlist.findMany({
@@ -147,6 +209,13 @@ async function getPlaylists(req, res) {
     }));
 
     console.log('✅ Playlists API: Playlists formatted successfully');
+
+    // If no playlists found and category specified, try dynamic generation
+    if (formattedPlaylists.length === 0 && categoryType && categoryKeyRaw) {
+      console.log(`🎵 Playlists API: No database playlists found, generating dynamic playlists for ${categoryType}:${categoryKeyRaw}`);
+      return await handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw);
+    }
+
     return res.status(200).json({
       message: 'Playlists retrieved successfully',
       playlists: formattedPlaylists,
@@ -742,6 +811,117 @@ function getMoodColor(mood) {
     energy: 'fa709a'        // Vibrant pink
   };
   return colors[mood] || '4a90e2'; // Default blue if mood not found
+}
+
+/**
+ * Generate Playlist Cover URL
+ *
+ * Creates a placeholder image URL for playlist covers based on mood.
+ *
+ * @function generatePlaylistCoverUrl
+ * @param {string} mood - Mood category for color selection
+ * @param {string} [title] - Optional playlist title for text overlay
+ * @returns {string} Generated cover image URL
+ */
+function generatePlaylistCoverUrl(mood, title = '') {
+  const color = getMoodColor(mood);
+  const text = title ? encodeURIComponent(title) : 'Playlist';
+  return `https://via.placeholder.com/400x400/${color}/ffffff?text=${text}`;
+}
+
+/**
+ * Handle Category-Based Playlist Generation
+ *
+ * Generates playlists based on user health goals or music genre preferences.
+ * Uses the category configuration system to create personalized playlists.
+ *
+ * @async
+ * @function handleCategoryPlaylists
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} categoryType - Type of category ('goal' or 'genre')
+ * @param {string} categoryKeyRaw - Raw category key from user input
+ * @returns {Promise<void>} JSON response with generated playlists
+ */
+async function handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw) {
+  try {
+    // Normalize category key and apply aliases
+    let categoryKey = normalizeTag(categoryKeyRaw);
+    if (categoryType === 'genre') {
+      categoryKey = GENRE_ALIASES[categoryKey] || categoryKey;
+    }
+
+    const categoryConfig = CATEGORY_CONFIG[categoryType]?.[categoryKey];
+    if (!categoryConfig) {
+      return res.status(400).json({
+        error: `Unknown ${categoryType}: ${categoryKeyRaw}`,
+        availableOptions: Object.keys(CATEGORY_CONFIG[categoryType] || {})
+      });
+    }
+
+    console.log(`🎵 Generating playlists for ${categoryType}:${categoryKey}`);
+
+    // Generate category-based playlists
+    const playlists = await fetchCategoryPlaylists({
+      categoryType,
+      categoryKey,
+      minPlaylists: DEFAULT_PLAYLIST_LIMIT,
+      tracksPerPlaylist: TRACKS_PER_PLAYLIST
+    });
+
+    // Transform playlists for frontend
+    const timestamp = Date.now();
+    const formattedPlaylists = playlists.map((playlist, index) => ({
+      id: `${categoryType}-${categoryKey}-${timestamp}-${index}`,
+      title: playlist.title,
+      description: playlist.description,
+      mood: playlist.mood,
+      category: playlist.category,
+      categoryKey: playlist.categoryKey,
+      verified: false,
+      coverImage: generatePlaylistCoverUrl(playlist.mood),
+      tracks: playlist.tracks.map((track, index) => ({
+        id: track.jamendoId,
+        title: track.title,
+        artist: track.artist,
+        duration: track.duration,
+        audioUrl: track.audioUrl,
+        albumArt: track.albumArt,
+        position: index
+      })),
+      trackCount: playlist.tracks.length,
+      createdAt: new Date().toISOString()
+    }));
+
+    return res.status(200).json({
+      playlists: formattedPlaylists,
+      count: formattedPlaylists.length,
+      category: {
+        type: categoryType,
+        key: categoryKey,
+        config: categoryConfig
+      }
+    });
+  } catch (error) {
+    console.error('Error generating category playlists:', error);
+    return res.status(500).json({
+      error: 'Failed to generate playlists',
+      details: error.message
+    });
+  }
+}
+
+/**
+ * Normalize Tag
+ *
+ * Normalizes user input tags to lowercase with underscores.
+ *
+ * @function normalizeTag
+ * @param {string} tag - Raw tag input
+ * @returns {string} Normalized tag
+ */
+function normalizeTag(tag) {
+  return tag.toLowerCase().replace(/\s+/g, '_');
 }
 
 /**
