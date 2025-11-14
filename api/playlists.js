@@ -35,6 +35,10 @@ async function handlePlaylistsRequest(req, res) {
             json: (data) => {
                 res.json(data);
                 return mockRes;
+            },
+            setHeader: (name, value) => {
+                res.setHeader(name, value);
+                return mockRes;
             }
         };
 

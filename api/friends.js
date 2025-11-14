@@ -1,21 +1,21 @@
 /**
- * Vercel Serverless Function for Library API
- * Handles user library operations (saved playlists and songs)
+ * Vercel Serverless Function for Friends API
+ * Handles friend system operations (friends, requests, etc.)
  */
 
 import { prisma } from '../backend/lib/prisma.js';
 
-// Import the main library logic from backend
-async function handleLibraryRequest(req, res) {
-    console.log('📚 Library API: Request received', {
+// Import the main friends logic from backend
+async function handleFriendsRequest(req, res) {
+    console.log('👥 Friends API: Request received', {
         method: req.method,
         query: req.query,
         url: req.url
     });
 
     try {
-        // Import the backend library handler
-        const { default: libraryHandler } = await import('../backend/api/library.js');
+        // Import the backend friends handler
+        const { default: friendsHandler } = await import('../backend/api/friends.js');
         
         // Create a mock Express-like request/response for the backend handler
         const mockReq = {
@@ -43,10 +43,10 @@ async function handleLibraryRequest(req, res) {
         };
 
         // Call the backend handler
-        await libraryHandler(mockReq, mockRes);
+        await friendsHandler(mockReq, mockRes);
         
     } catch (error) {
-        console.error('🚨 Library API: Error:', error);
+        console.error('🚨 Friends API: Error:', error);
         res.status(500).json({
             error: 'Internal server error',
             message: error.message,
@@ -67,5 +67,5 @@ export default async function handler(req, res) {
         return;
     }
 
-    await handleLibraryRequest(req, res);
+    await handleFriendsRequest(req, res);
 }
