@@ -19,8 +19,8 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Rest of your imports
-import mockFilesHandler from '../api/mock-files.js';
-import mockPeopleHandler from '../api/mock-people.js';
+import filesHandler from '../express-handlers/files.js';
+import peopleHandler from '../express-handlers/people.js';
 
 const app = express();
 const PORT = 3000;
@@ -35,16 +35,16 @@ app.use('/assets', express.static(join(projectRoot, 'dist', 'assets')));
 // API Routes
 app.all('/api/files', async (req, res) => {
   try {
-    await mockFilesHandler(req, res);
+    await filesHandler(req, res);
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Files API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.all('/api/people', async (req, res) => {
   try {
-    await mockPeopleHandler(req, res);
+    await peopleHandler(req, res);
   } catch (error) {
     console.error('People API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -52,7 +52,7 @@ app.all('/api/people', async (req, res) => {
 });
 
 // Import and use the users API handler
-import usersHandler from '../api/users/index.js';
+import usersHandler from '../express-handlers/users/index.js';
 app.all('/api/users', async (req, res) => {
   try {
     await usersHandler(req, res);
@@ -63,7 +63,7 @@ app.all('/api/users', async (req, res) => {
 });
 
 // Import and use the friends API handler
-import friendsHandler from '../api/friends.js';
+import friendsHandler from '../express-handlers/friends.js';
 app.all('/api/friends', async (req, res) => {
   try {
     await friendsHandler(req, res);
@@ -74,7 +74,7 @@ app.all('/api/friends', async (req, res) => {
 });
 
 // Import and use the search users API handler
-import searchUsersHandler from '../api/search-users.js';
+import searchUsersHandler from '../express-handlers/search-users.js';
 app.all('/api/search-users', async (req, res) => {
   try {
     await searchUsersHandler(req, res);
@@ -85,12 +85,23 @@ app.all('/api/search-users', async (req, res) => {
 });
 
 // Import and use the playlists API handler
-import playlistsHandler from '../api/playlists.js';
+import playlistsHandler from '../express-handlers/playlists.js';
 app.all('/api/playlists', async (req, res) => {
   try {
     await playlistsHandler(req, res);
   } catch (error) {
     console.error('Playlists API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import and use the library API handler
+import libraryHandler from '../express-handlers/library.js';
+app.all('/api/library', async (req, res) => {
+  try {
+    await libraryHandler(req, res);
+  } catch (error) {
+    console.error('Library API Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

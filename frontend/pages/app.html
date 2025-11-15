@@ -29,6 +29,14 @@
         </div>
 
         <nav class="sidebar-nav">
+            <div class="nav-item active" data-tab="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Home</span>
+            </div>
+            <div class="nav-item" data-tab="library">
+                <span class="nav-icon">🎧</span>
+                <span class="nav-text">My Library</span>
+            </div>
             <!-- TEMPORARILY HIDDEN TABS - Remove 'display: none;' to restore -->
             <div class="nav-item" data-tab="about" style="display: none;">
                 <span class="nav-icon">ℹ️</span>
@@ -72,235 +80,115 @@
 
     <!-- Main Content Area -->
     <div class="main-content">
-        <!-- Friend Search and Notifications Bar -->
-        <div class="friend-search-bar" id="friend-search-container" style="display: none;">
-            <div class="search-section">
-                <div class="search-input-container">
-                    <input type="text" id="user-search-input" placeholder="Search users by username, name, or ID..." />
-                    <div class="search-icon">🔍</div>
+        <div id="home-content" class="content-section" style="display:block;">
+            <!-- Friend Search and Notifications Bar -->
+            <div class="friend-search-bar" id="friend-search-container" style="display: none;">
+                <div class="search-section">
+                    <div class="search-input-container">
+                        <input type="text" id="user-search-input"
+                            placeholder="Search users by username, name, or ID..." />
+                        <div class="search-icon">🔍</div>
+                    </div>
+                    <div class="search-results" id="search-results"></div>
                 </div>
-                <div class="search-results" id="search-results"></div>
+                <div class="notifications-section">
+                    <div class="notification-icon" id="friend-requests-icon">
+                        <span class="envelope">✉️</span>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </div>
+                </div>
+                <div class="friends-section">
+                    <div class="friends-icon" id="friends-list-icon">
+                        <span class="friends-emoji">👥</span>
+                        <span class="friends-count" id="friends-count">0</span>
+                    </div>
+                </div>
             </div>
-            <div class="notifications-section">
-                <div class="notification-icon" id="friend-requests-icon">
-                    <span class="envelope">✉️</span>
-                    <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+
+            <div class="home-hero">
+                <div class="hero-text-block">
+                    <p class="hero-tag">Your Wellness Soundtrack</p>
+                    <h1>Welcome to Musicare</h1>
+                    <p class="hero-subtitle">Music curated for your mood and well-being</p>
+                    <div class="home-summary" id="home-mood-summary">
+                        Sign in to receive personalized recommendations.
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <p class="hero-actions-title">Live status</p>
+                    <p class="hero-status" id="playlist-status">Curating personalized sets...</p>
+                    <button id="populate-playlists-btn" class="populate-playlists-btn">
+                        🔁 Refresh Recommendations
+                    </button>
+                    <p class="hero-help-text">Need a fresh vibe? Pull in new playlists anytime.</p>
                 </div>
             </div>
-            <div class="friends-section">
-                <div class="friends-icon" id="friends-list-icon">
-                    <span class="friends-emoji">👥</span>
-                    <span class="friends-count" id="friends-count">0</span>
+
+            <!-- Music Playlists -->
+            <div class="playlists-container">
+                <div class="playlists-header">
+                    <div>
+                        <h2>Personalized Playlists</h2>
+                        <p class="playlists-subtitle">Therapeutic sets tuned to your current goals.</p>
+                    </div>
                 </div>
+
+                <div id="playlist-sections" class="playlist-sections">
+                    <div class="section-empty-state">
+                        Personalized playlists will appear here based on your profile.
+                    </div>
+                </div>
+
             </div>
         </div>
+    </div>
 
-        <div class="welcome-message">
-            <h1>Welcome to Musicare</h1>
-            <p>Music curated for your mood and well-being</p>
-            <div class="subtitle">Click on the sidebar items to explore</div>
-        </div>
-
-        <!-- Music Playlists -->
-        <div class="playlists-container">
-            <div class="playlists-header">
-                <h2>Therapeutic Playlists</h2>
-                <button id="populate-playlists-btn" class="populate-playlists-btn"
-                    style="background: #4a90e2; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; margin-left: 1rem;">
-                    🎵 Load Playlists
-                </button>
-                <p class="disclaimer" id="playlist-status">Click "Load Playlists" to fetch therapeutic music</p>
-            </div>
-
-            <div class="playlists-grid">
-                <!-- Anxiety Relief Playlist -->
-                <div class="playlist-card">
-                    <div class="playlist-cover">
-                        <div class="cover-gradient anxiety"></div>
-                        <div class="play-button">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="playlist-info">
-                        <h3>Anxiety Relief</h3>
-                        <p>Calming melodies to ease tension</p>
-                        <div class="playlist-stats">12 songs • 45 min</div>
-                    </div>
-                    <div class="playlist-tracks">
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Weightless</div>
-                                <div class="track-artist">Marconi Union</div>
-                            </div>
-                            <div class="track-duration">8:10</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Clair de Lune</div>
-                                <div class="track-artist">Claude Debussy</div>
-                            </div>
-                            <div class="track-duration">4:42</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Spiegel im Spiegel</div>
-                                <div class="track-artist">Arvo Pärt</div>
-                            </div>
-                            <div class="track-duration">6:25</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">River</div>
-                                <div class="track-artist">Emilie Simon</div>
-                            </div>
-                            <div class="track-duration">3:48</div>
-                        </div>
-                    </div>
+    <!-- Global Music Player -->
+    <div class="global-player-container">
+        <div class="music-player">
+            <div class="player-track-info">
+                <div class="track-cover">
+                    <div class="mini-cover anxiety"></div>
                 </div>
-
-                <!-- Focus & Concentration Playlist -->
-                <div class="playlist-card">
-                    <div class="playlist-cover">
-                        <div class="cover-gradient focus"></div>
-                        <div class="play-button">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="playlist-info">
-                        <h3>Focus & Concentration</h3>
-                        <p>Enhance productivity and mental clarity</p>
-                        <div class="playlist-stats">15 songs • 62 min</div>
-                    </div>
-                    <div class="playlist-tracks">
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Music for Airports</div>
-                                <div class="track-artist">Brian Eno</div>
-                            </div>
-                            <div class="track-duration">17:20</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Metamorphosis Two</div>
-                                <div class="track-artist">Philip Glass</div>
-                            </div>
-                            <div class="track-duration">5:31</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Avril 14th</div>
-                                <div class="track-artist">Aphex Twin</div>
-                            </div>
-                            <div class="track-duration">2:05</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Gymnopédie No. 1</div>
-                                <div class="track-artist">Erik Satie</div>
-                            </div>
-                            <div class="track-duration">3:32</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sleep & Relaxation Playlist -->
-                <div class="playlist-card">
-                    <div class="playlist-cover">
-                        <div class="cover-gradient sleep"></div>
-                        <div class="play-button">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="playlist-info">
-                        <h3>Sleep & Relaxation</h3>
-                        <p>Gentle sounds for peaceful rest</p>
-                        <div class="playlist-stats">10 songs • 78 min</div>
-                    </div>
-                    <div class="playlist-tracks">
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Sleep Baby Sleep</div>
-                                <div class="track-artist">Broods</div>
-                            </div>
-                            <div class="track-duration">4:12</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Moonlight Sonata</div>
-                                <div class="track-artist">Ludwig van Beethoven</div>
-                            </div>
-                            <div class="track-duration">15:28</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">Porcelain</div>
-                                <div class="track-artist">Moby</div>
-                            </div>
-                            <div class="track-duration">4:01</div>
-                        </div>
-                        <div class="track">
-                            <div class="track-info">
-                                <div class="track-name">La Valse d'Amélie</div>
-                                <div class="track-artist">Yann Tiersen</div>
-                            </div>
-                            <div class="track-duration">2:15</div>
-                        </div>
-                    </div>
+                <div class="current-track">
+                    <div class="current-track-name">Weightless</div>
+                    <div class="current-track-artist">Marconi Union</div>
                 </div>
             </div>
 
-            <!-- Music Player Mockup -->
-            <div class="music-player">
-                <div class="player-track-info">
-                    <div class="track-cover">
-                        <div class="mini-cover anxiety"></div>
-                    </div>
-                    <div class="current-track">
-                        <div class="current-track-name">Weightless</div>
-                        <div class="current-track-artist">Marconi Union</div>
-                    </div>
-                </div>
-
-                <div class="player-controls">
-                    <button class="control-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                        </svg>
-                    </button>
-                    <button class="control-btn play-pause">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                        </svg>
-                    </button>
-                    <button class="control-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="player-progress">
-                    <div class="progress-time">2:34</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 31%;"></div>
-                    </div>
-                    <div class="progress-time">8:10</div>
-                </div>
-
-                <div class="player-volume">
+            <div class="player-controls">
+                <button class="control-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
                     </svg>
-                    <div class="volume-bar">
-                        <div class="volume-fill" style="width: 65%;"></div>
-                    </div>
+                </button>
+                <button class="control-btn play-pause">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                </button>
+                <button class="control-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="player-progress">
+                <div class="progress-time">2:34</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 31%;"></div>
+                </div>
+                <div class="progress-time">8:10</div>
+            </div>
+
+            <div class="player-volume">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                </svg>
+                <div class="volume-bar">
+                    <div class="volume-fill" style="width: 65%;"></div>
                 </div>
             </div>
         </div>
@@ -453,6 +341,12 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div id="library-content">
+            <div class="library-empty-state">
+                <h3>Loading your library...</h3>
+                <p>Your saved playlists and songs will appear here shortly.</p>
             </div>
         </div>
     </div>
