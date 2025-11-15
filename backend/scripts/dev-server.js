@@ -52,7 +52,7 @@ app.all('/api/people', async (req, res) => {
 });
 
 // Import and use the users API handler
-import usersHandler from '../../api/users/index.js';
+import usersHandler from '../api/users/index.js';
 app.all('/api/users', async (req, res) => {
   try {
     await usersHandler(req, res);
@@ -63,7 +63,7 @@ app.all('/api/users', async (req, res) => {
 });
 
 // Import and use the friends API handler
-import friendsHandler from '../../api/friends.js';
+import friendsHandler from '../api/friends.js';
 app.all('/api/friends', async (req, res) => {
   try {
     await friendsHandler(req, res);
@@ -74,7 +74,7 @@ app.all('/api/friends', async (req, res) => {
 });
 
 // Import and use the search users API handler
-import searchUsersHandler from '../../api/search-users.js';
+import searchUsersHandler from '../api/search-users.js';
 app.all('/api/search-users', async (req, res) => {
   try {
     await searchUsersHandler(req, res);
@@ -85,7 +85,7 @@ app.all('/api/search-users', async (req, res) => {
 });
 
 // Import and use the playlists API handler
-import playlistsHandler from '../../api/playlists.js';
+import playlistsHandler from '../api/playlists.js';
 app.all('/api/playlists', async (req, res) => {
   try {
     await playlistsHandler(req, res);
@@ -96,7 +96,7 @@ app.all('/api/playlists', async (req, res) => {
 });
 
 // Import and use the library API handler
-import libraryHandler from '../../api/library.js';
+import libraryHandler from '../api/library.js';
 app.all('/api/library', async (req, res) => {
   try {
     await libraryHandler(req, res);
