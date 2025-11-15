@@ -6,4 +6,4 @@
  */
 
 // Re-export the comprehensive backend implementation
-export { default } from '../backend/api/library.js';
+export { default } from '../backend/express-handlers/library.js';
