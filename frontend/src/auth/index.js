@@ -1,4 +1,28 @@
-// src/auth/index.js
+/**
+ * @fileoverview Login Authentication Module
+ *
+ * Handles user authentication for the Musicare application login page.
+ * Manages Firebase authentication initialization, login form submission,
+ * and automatic redirection based on authentication state.
+ *
+ * This module is loaded on the main login page (index.html) and handles:
+ * - Firebase app initialization
+ * - Email/password login
+ * - Form validation and error handling
+ * - Automatic redirect to app when authenticated
+ *
+ * @author Musicare Development Team
+ * @version 1.0.0
+ * @since 2024-11-14
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js - Firebase core
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js - Firebase authentication
+ * @requires ../config/firebase.js - Firebase configuration
+ *
+ * @example
+ * // This module is loaded via script tag in index.html:
+ * // <script type="module" src="./src/auth/index.js"></script>
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
@@ -9,22 +33,58 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../config/firebase.js';
 
-// Initialize Firebase
+/**
+ * Firebase Application Instance
+ *
+ * Initialized Firebase app instance used throughout the authentication flow.
+ *
+ * @constant {FirebaseApp} firebaseApp
+ */
 const firebaseApp = initializeApp(firebaseConfig);
+
+/**
+ * Firebase Authentication Service
+ *
+ * Main authentication service instance for handling user login, logout,
+ * and authentication state changes.
+ *
+ * @constant {Auth} auth
+ */
 const auth = getAuth(firebaseApp);
 
-// Export Firebase services
+// Export Firebase services for use in other modules
 export { auth, firebaseSignOut };
 
-// For debugging
+/**
+ * Debug Logging
+ *
+ * Logs Firebase initialization status for debugging purposes.
+ *
+ * @private
+ */
 console.log('Firebase initialized:', !!firebaseApp);
 console.log('Auth service:', auth);
 console.log('Vite present?', typeof import.meta !== 'undefined' && !!import.meta.env?.BASE_URL);
 
-// Make auth available globally if needed
+/**
+ * Global Auth Access
+ *
+ * Makes auth service available globally on window object for debugging
+ * and potential use in inline scripts.
+ *
+ * @global
+ */
 window.auth = auth;
 
-// Form handling
+/**
+ * DOM Content Loaded Event Handler
+ *
+ * Initializes all authentication form handlers and navigation once the DOM is ready.
+ * Sets up event listeners for login form submission, signup navigation, and
+ * authentication state monitoring.
+ *
+ * @listens DOMContentLoaded
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
@@ -33,7 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
     const signupContainer = document.getElementById('signup-container');
 
-    // Handle signup link - allow default navigation to signup.html
+    /**
+     * Signup Link Navigation Handler
+     *
+     * Allows default navigation to signup.html page.
+     * Logs navigation for debugging purposes.
+     */
     if (showSignupLink) {
         showSignupLink.addEventListener('click', (e) => {
             console.log('Navigating to signup page');
@@ -41,7 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Keep the login form toggle if needed, but remove preventDefault
+    /**
+     * Login Form Toggle Handler
+     *
+     * Handles toggling between login and signup forms if both are present
+     * on the same page (legacy behavior, may not be used in current implementation).
+     */
     if (showLoginLink && loginContainer && signupContainer) {
         showLoginLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -50,7 +120,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Login form submission
+    /**
+     * Login Form Submission Handler
+     *
+     * Handles user login via email and password authentication.
+     * Provides loading states, error handling, and automatic redirect on success.
+     *
+     * @async
+     * @function handleLoginSubmit
+     * @param {Event} e - Form submission event
+     * @throws {Error} Firebase authentication errors
+     *
+     * @example
+     * // User enters credentials and submits form
+     * // On success: Redirects to app.html via onAuthStateChanged
+     * // On error: Displays user-friendly error message
+     */
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -66,22 +151,26 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerHTML = 'Signing in...';
 
             try {
+                // Authenticate user with Firebase
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log('User logged in:', userCredential.user);
-                // onAuthStateChanged will handle the redirect
+                // onAuthStateChanged will handle the redirect to app.html
             } catch (error) {
                 console.error('Login error:', error);
                 let errorMessage = 'Failed to sign in. Please check your credentials.';
 
+                // Provide user-friendly error messages based on error code
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                     errorMessage = 'Invalid email or password.';
                 } else if (error.code === 'auth/too-many-requests') {
                     errorMessage = 'Too many failed attempts. Please try again later.';
                 }
 
+                // Display error message to user
                 if (errorElement) {
                     errorElement.textContent = errorMessage;
                     errorElement.style.display = 'block';
+                    // Auto-hide error after 5 seconds
                     setTimeout(() => {
                         errorElement.style.display = 'none';
                     }, 5000);
@@ -94,7 +183,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Signup form submission
+    /**
+     * Signup Form Submission Handler
+     *
+     * Handles new user registration with comprehensive validation.
+     * Creates user in Firebase Auth and saves profile to Prisma database.
+     *
+     * Note: This handler is present for backward compatibility but signup
+     * is now primarily handled in signup.js on the dedicated signup page.
+     *
+     * @async
+     * @function handleSignupSubmit
+     * @param {Event} e - Form submission event
+     * @throws {Error} Firebase authentication or database errors
+     *
+     * Validation Rules:
+     * - Username: Required
+     * - Email: Required, valid format
+     * - Password: Minimum 8 characters
+     * - Confirm Password: Must match password
+     */
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -108,15 +216,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = signupForm.querySelector('button[type="submit"]');
             const btnText = submitBtn.querySelector('.btn-text');
 
-            // Reset error messages
+            // Reset all error messages
             document.querySelectorAll('.error-message').forEach(el => {
                 el.textContent = '';
                 el.style.display = 'none';
             });
 
-            // Validate form
+            // Client-side validation
             let hasError = false;
 
+            // Validate username
             if (!username) {
                 const usernameError = document.getElementById('username-error');
                 if (usernameError) {
@@ -126,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Validate email
             if (!email) {
                 const emailError = document.getElementById('email-error');
                 if (emailError) {
@@ -142,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Validate password length
             if (password.length < 8) {
                 const passwordError = document.getElementById('password-error');
                 if (passwordError) {
@@ -151,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Validate password confirmation
             if (password !== confirmPassword) {
                 const confirmPasswordError = document.getElementById('confirm-password-error');
                 if (confirmPasswordError) {
@@ -160,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Stop if validation failed
             if (hasError) return;
 
             // Show loading state
@@ -168,11 +281,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnText) btnText.textContent = 'Creating Account...';
 
             try {
-                // Create user in Firebase
+                /**
+                 * Step 1: Create user in Firebase Authentication
+                 *
+                 * Creates the user account in Firebase Auth system.
+                 * This provides authentication capabilities.
+                 */
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('User created:', userCredential.user);
 
-                // Save additional user data to Prisma database
+                /**
+                 * Step 2: Save user profile to Prisma database
+                 *
+                 * Saves additional user data (email, displayName) to the PostgreSQL
+                 * database via the /api/users endpoint. This allows for extended
+                 * user profiles beyond what Firebase Auth provides.
+                 */
                 try {
                     console.log('Attempting to save user to database:', email);
                     const response = await fetch('/api/users', {
@@ -209,8 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 } catch (dbError) {
                     console.error('Database error:', dbError);
-                    // Even if database save fails, the user is still created in Firebase
-                    // Show a warning but still log them in
+                    /**
+                     * Graceful degradation: Even if database save fails,
+                     * the user is still created in Firebase Auth.
+                     * Show a warning but still allow them to proceed.
+                     */
                     const warning = document.createElement('div');
                     warning.className = 'warning-message';
                     warning.textContent = 'Account created, but there was an issue saving your profile. You can update it later.';
@@ -224,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Signup error:', error);
 
-                // Show appropriate error message
+                // Provide user-friendly error messages based on Firebase error codes
                 let errorMessage = 'An error occurred during signup. Please try again.';
 
                 if (error.code === 'auth/email-already-in-use') {
@@ -248,7 +375,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Check if user is already logged in
+    /**
+     * Authentication State Monitor
+     *
+     * Monitors Firebase authentication state and handles automatic redirects:
+     * - If user is logged in and on auth page → redirect to app
+     * - If user is not logged in and on app page → redirect to login
+     *
+     * This ensures users can't access the app without authentication and
+     * prevents authenticated users from seeing the login page unnecessarily.
+     *
+     * @listens onAuthStateChanged
+     * @param {User|null} user - Firebase user object or null if not authenticated
+     */
     let isRedirecting = false;
 
     onAuthStateChanged(auth, (user) => {
@@ -258,11 +397,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPath === '/';
 
         if (user && !isRedirecting && isOnAuthPage) {
+            // User is authenticated and on login/signup page → redirect to app
             isRedirecting = true;
             console.log('User is logged in, redirecting to app.html');
             window.location.href = 'pages/app.html';
         } else if (!user && currentPath.endsWith('app.html')) {
-            // If user is not logged in and trying to access app.html, redirect to login
+            // User is not authenticated and trying to access app → redirect to login
             window.location.href = '../index.html';
         }
     });

@@ -1,29 +1,110 @@
-// Friend system functionality
+/**
+ * @fileoverview Friend System Module
+ *
+ * Comprehensive friend management system for the Musicare application.
+ * Handles friend search, friend requests, friend list management, and real-time updates.
+ *
+ * Features:
+ * - User search with debounced input
+ * - Send/accept/reject friend requests
+ * - View friends list with online status
+ * - Friend request notifications with badge counts
+ * - Modal-based UI for friend management
+ * - Integration with Prisma database via /api/friends endpoint
+ *
+ * @author Musicare Development Team
+ * @version 1.0.0
+ * @since 2024-11-14
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js - Firebase core
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js - Firebase authentication
+ * @requires ../../config/firebase.js - Firebase configuration
+ *
+ * @example
+ * // This module is automatically imported in app/index.js:
+ * // import '../features/friends/index.js';
+ * // The FriendSystem class is instantiated automatically on load
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../../config/firebase.js';
 
-// Initialize Firebase (reuse the same instance)
+/**
+ * Firebase Application Instance
+ *
+ * @constant {FirebaseApp} app
+ */
 const app = initializeApp(firebaseConfig);
+
+/**
+ * Firebase Authentication Service
+ *
+ * @constant {Auth} auth
+ */
 const auth = getAuth(app);
 
+/**
+ * Friend System Class
+ *
+ * Main class managing all friend-related functionality including search,
+ * requests, and friend list management.
+ *
+ * @class FriendSystem
+ */
 class FriendSystem {
+    /**
+     * Initialize Friend System
+     *
+     * Sets up the friend system with initial state and starts
+     * listening for authentication changes.
+     *
+     * @constructor
+     */
     constructor() {
+        /**
+         * Current authenticated user data from database
+         * @type {Object|null}
+         */
         this.currentUser = null;
+
+        /**
+         * Timeout ID for debounced search
+         * @type {number|null}
+         */
         this.searchTimeout = null;
+
+        /**
+         * Currently selected user in search results
+         * @type {Object|null}
+         */
         this.currentSelectedUser = null;
+
         this.init();
     }
 
+    /**
+     * Initialize Friend System
+     *
+     * Sets up authentication state listener and initializes UI components
+     * when user is authenticated.
+     *
+     * @async
+     * @function init
+     */
     async init() {
         console.log('🔍 FriendSystem: Initializing...');
+
         // Wait for auth state to be ready
         auth.onAuthStateChanged(async (user) => {
             console.log('🔍 FriendSystem: Auth state changed', user ? 'User logged in' : 'User logged out');
             if (user) {
                 console.log('🔍 FriendSystem: Firebase user:', user.uid);
+
+                // Load current user data from database
                 this.currentUser = await this.getCurrentUserData(user.uid);
                 console.log('🔍 FriendSystem: Current user data:', this.currentUser);
+
+                // Set up UI and load initial data
                 this.setupEventListeners();
                 this.showFriendSearchBar();
                 this.loadFriendRequestsCount();
@@ -34,11 +115,27 @@ class FriendSystem {
         });
     }
 
+    /**
+     * Get Current User Data from Database
+     *
+     * Fetches the current user's profile from the Prisma database.
+     * Tries Firebase UID first, falls back to email if needed.
+     * Automatically updates user record with Firebase UID if missing.
+     *
+     * @async
+     * @function getCurrentUserData
+     * @param {string} firebaseUid - Firebase authentication UID
+     * @returns {Promise<Object|null>} User data object or null if not found
+     *
+     * @example
+     * const userData = await this.getCurrentUserData('firebase-uid-123');
+     * // Returns: { id: 1, email: 'user@example.com', displayName: 'User', ... }
+     */
     async getCurrentUserData(firebaseUid) {
         try {
             console.log('🔍 FriendSystem: Fetching user data for Firebase UID:', firebaseUid);
 
-            // First try to find by Firebase UID
+            // First try to find by Firebase UID (primary method)
             let response = await fetch(`/api/users?firebaseUid=${firebaseUid}`);
             if (response.ok) {
                 const data = await response.json();
@@ -48,7 +145,7 @@ class FriendSystem {
                 return userData;
             }
 
-            // If not found by Firebase UID, try to find by email (fallback)
+            // If not found by Firebase UID, try to find by email (fallback for legacy users)
             const auth = window.auth;
             if (auth && auth.currentUser && auth.currentUser.email) {
                 console.log('🔍 FriendSystem: Trying fallback search by email:', auth.currentUser.email);
@@ -77,6 +174,18 @@ class FriendSystem {
         return null;
     }
 
+    /**
+     * Update User Firebase UID
+     *
+     * Updates a user record in the database with their Firebase UID.
+     * Used for migrating legacy users who don't have Firebase UID stored.
+     *
+     * @async
+     * @function updateUserFirebaseUid
+     * @param {number} userId - Database user ID
+     * @param {string} firebaseUid - Firebase authentication UID
+     * @returns {Promise<void>}
+     */
     async updateUserFirebaseUid(userId, firebaseUid) {
         try {
             const response = await fetch('/api/users', {

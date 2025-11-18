@@ -1,4 +1,30 @@
-// Enhanced signup with health & wellness fields
+/**
+ * @fileoverview Enhanced Signup Authentication Module
+ *
+ * Comprehensive user registration system for the Musicare application with
+ * multi-step form, health & wellness goal collection, and music preference selection.
+ * Integrates Firebase Authentication with Prisma database for complete user profiles.
+ *
+ * Features:
+ * - Multi-step signup form with validation
+ * - Health & wellness goal selection
+ * - Music genre preference collection
+ * - Daily listening goal setting
+ * - Firebase Auth + Prisma database integration
+ * - Automatic timezone detection
+ *
+ * @author Musicare Development Team
+ * @version 1.0.0
+ * @since 2024-11-14
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js - Firebase core
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js - Firebase authentication
+ * @requires ../config/firebase.js - Firebase configuration
+ *
+ * @example
+ * // This module is loaded via script tag in signup.html:
+ * // <script type="module" src="../src/auth/signup.js"></script>
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
   getAuth,
@@ -6,11 +32,34 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../config/firebase.js';
 
-// Initialize Firebase
+/**
+ * Firebase Application Instance
+ *
+ * @constant {FirebaseApp} firebaseApp
+ */
 const firebaseApp = initializeApp(firebaseConfig);
+
+/**
+ * Firebase Authentication Service
+ *
+ * @constant {Auth} auth
+ */
 const auth = getAuth(firebaseApp);
 
-// Health goals options
+/**
+ * Health & Wellness Goals Configuration
+ *
+ * Predefined list of therapeutic health goals that users can select during signup.
+ * These goals are used to personalize music recommendations and track wellness progress.
+ *
+ * @constant {Array<{value: string, label: string}>} HEALTH_GOALS
+ *
+ * @example
+ * // User selects goals during signup:
+ * // - Mental Wellness
+ * // - Stress Relief
+ * // - Better Sleep
+ */
 const HEALTH_GOALS = [
   { value: 'mental_wellness', label: 'Mental Wellness' },
   { value: 'stress_relief', label: 'Stress Relief' },
@@ -22,26 +71,53 @@ const HEALTH_GOALS = [
   { value: 'mood_boost', label: 'Mood Boost' }
 ];
 
-// Music preferences
+/**
+ * Music Genre Preferences
+ *
+ * Available music genres for user preference selection.
+ * Used to personalize playlist recommendations and music discovery.
+ *
+ * @constant {Array<string>} MUSIC_GENRES
+ */
 const MUSIC_GENRES = [
   'Classical', 'Jazz', 'Ambient', 'Lo-fi', 'Nature Sounds',
   'Binaural Beats', 'Meditation', 'Instrumental', 'Acoustic',
   'Electronic', 'Pop', 'Rock', 'R&B', 'Hip-Hop'
 ];
 
-// Form handling
+/**
+ * Main Form Initialization and Event Handling
+ *
+ * Sets up the multi-step signup form with validation, Firebase authentication,
+ * and database integration. Handles form submission, step navigation, and
+ * user profile creation.
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('enhanced-signup-form');
     let currentStep = 1;
-    
-    // Initialize form steps
+
+    // Initialize form steps (render checkboxes, set up UI)
     initializeSteps();
-    
+
+    /**
+     * Enhanced Signup Form Submission Handler
+     *
+     * Handles the complete signup flow:
+     * 1. Collects and validates all form data
+     * 2. Creates user in Firebase Authentication
+     * 3. Saves extended profile to Prisma database
+     * 4. Redirects to app on success
+     *
+     * @async
+     * @function handleSignupSubmit
+     * @param {Event} e - Form submission event
+     * @throws {Error} Firebase authentication or database errors
+     */
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Collect all form data
+
+            // Collect all form data from multi-step form
             const formData = {
                 email: document.getElementById('email')?.value.trim() || '',
                 password: document.getElementById('password')?.value || '',
@@ -51,18 +127,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 healthGoals: getSelectedCheckboxes('healthGoals'),
                 musicPreferences: getSelectedCheckboxes('musicPreferences')
             };
-            
-            // Validation
+
+            // Client-side validation
             if (!formData.email || !formData.password) {
                 showError('Email and password are required');
                 return;
             }
-            
+
             if (formData.password !== formData.confirmPassword) {
                 showError('Passwords do not match');
                 return;
             }
-            
+
             if (formData.password.length < 6) {
                 showError('Password must be at least 6 characters');
                 return;
@@ -70,12 +146,28 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 showLoading(true);
-                
-                // Create user in Firebase
+
+                /**
+                 * Step 1: Create user in Firebase Authentication
+                 *
+                 * Creates the authentication account with email and password.
+                 */
                 const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
                 console.log('User created in Firebase:', userCredential.user);
-                
-                // Save to Prisma database
+
+                /**
+                 * Step 2: Save extended user profile to Prisma database
+                 *
+                 * Saves health goals, music preferences, listening goals, and other
+                 * profile data to PostgreSQL via the /api/users endpoint.
+                 *
+                 * Profile includes:
+                 * - Basic info (email, username, displayName)
+                 * - Health & wellness goals
+                 * - Music genre preferences
+                 * - Daily listening goal (minutes)
+                 * - Timezone (auto-detected)
+                 */
                 try {
                     console.log('Saving user to database...');
                     const response = await fetch('/api/users', {
@@ -93,27 +185,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                         })
                     });
-                    
+
                     console.log('API Response status:', response.status);
                     const responseData = await response.json();
                     console.log('API Response data:', responseData);
-                    
+
                     if (!response.ok) {
                         throw new Error(responseData.error || 'Failed to save user data');
                     }
-                    
+
                     console.log('User successfully saved to database');
                     showSuccess('Account created successfully! Redirecting...');
-                    
+
+                    // Redirect to app after brief delay
                     setTimeout(() => {
                         window.location.href = '/pages/app.html';
                     }, 1500);
-                    
+
                 } catch (dbError) {
                     console.error('Database error:', dbError);
                     showError('Account created but profile setup failed: ' + dbError.message);
                 }
-                
+
             } catch (error) {
                 console.error('Signup error:', error);
                 showError(getFirebaseErrorMessage(error));

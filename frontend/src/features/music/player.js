@@ -1,6 +1,46 @@
-// Music Player Module - Handles audio playback, personalization, and library management
+/**
+ * @fileoverview Music Player Module
+ *
+ * Comprehensive music player for the Musicare application with therapeutic
+ * music playback, personalized recommendations, and library management.
+ *
+ * Features:
+ * - Audio playback with HTML5 Audio API
+ * - Personalized playlist recommendations based on health goals
+ * - Genre-based music discovery
+ * - Jamendo API integration for therapeutic music
+ * - Save/unsave playlists and songs to library
+ * - Playlist creation and management
+ * - Progress tracking and time display
+ * - Volume control
+ * - Shuffle and repeat modes
+ * - Responsive UI with animations
+ *
+ * @author Musicare Development Team
+ * @version 1.0.0
+ * @since 2024-11-14
+ * @requires /api/playlists - Playlist management API
+ * @requires /api/users - User profile API
+ *
+ * @example
+ * // This module is loaded in app.html and automatically initializes:
+ * // const player = new MusicPlayer();
+ */
+
 console.log('🎵 Music Player: Module file loaded!');
 
+/**
+ * Health Goal Metadata Configuration
+ *
+ * Maps health goals to display metadata and associated moods.
+ * Used for personalized playlist recommendations and UI display.
+ *
+ * @constant {Object} HEALTH_GOAL_METADATA
+ * @property {Object} mental_wellness - Mental wellness goal configuration
+ * @property {string} mental_wellness.title - Display title
+ * @property {string} mental_wellness.subtitle - Description text
+ * @property {Array<string>} mental_wellness.moods - Associated mood tags for playlist matching
+ */
 const HEALTH_GOAL_METADATA = {
     mental_wellness: {
         title: 'Mental Wellness',
@@ -44,12 +84,34 @@ const HEALTH_GOAL_METADATA = {
     }
 };
 
+/**
+ * Section Playlist Limit
+ *
+ * Maximum number of playlists to display per section (health goal or genre).
+ *
+ * @constant {number} SECTION_PLAYLIST_LIMIT
+ */
 const SECTION_PLAYLIST_LIMIT = 3;
 
+/**
+ * Health Goal Aliases
+ *
+ * Maps common typos or variations to canonical health goal names.
+ *
+ * @constant {Object} HEALTH_GOAL_ALIASES
+ */
 const HEALTH_GOAL_ALIASES = {
     mental_wellnes: 'mental_wellness'
 };
 
+/**
+ * Genre Preference Aliases
+ *
+ * Maps genre variations and synonyms to canonical genre names.
+ * Handles different spellings and formats (e.g., "R&B" → "rnb").
+ *
+ * @constant {Object} GENRE_PREFERENCE_ALIASES
+ */
 const GENRE_PREFERENCE_ALIASES = {
     'r&b': 'rnb',
     'rhythm and blues': 'rnb',
@@ -61,22 +123,94 @@ const GENRE_PREFERENCE_ALIASES = {
     'rain sound': 'nature'
 };
 
+/**
+ * Music Player Class
+ *
+ * Main class managing all music playback and library functionality.
+ * Integrates with Jamendo API for music discovery and Prisma database
+ * for user library management.
+ *
+ * @class MusicPlayer
+ */
 class MusicPlayer {
+    /**
+     * Initialize Music Player
+     *
+     * Sets up the audio player, initializes state, and loads user library.
+     *
+     * @constructor
+     */
     constructor() {
+        /**
+         * HTML5 Audio element for playback
+         * @type {Audio}
+         */
         this.audio = new Audio();
+
+        /**
+         * Currently loaded playlist
+         * @type {Object|null}
+         */
         this.currentPlaylist = null;
+
+        /**
+         * Currently playing track
+         * @type {Object|null}
+         */
         this.currentTrack = null;
+
+        /**
+         * Index of current track in playlist
+         * @type {number}
+         */
         this.currentTrackIndex = 0;
+
+        /**
+         * Playback state
+         * @type {boolean}
+         */
         this.isPlaying = false;
+
+        /**
+         * Personalized sections (health goals + genres)
+         * @type {Array<Object>}
+         */
         this.sections = [];
+
+        /**
+         * User context with profile data
+         * @type {Object|null}
+         */
         this.userContext = window.musicareUserContext || null;
+
+        /**
+         * Set of saved playlist IDs
+         * @type {Set<string>}
+         */
         this.savedPlaylists = new Set();
+
+        /**
+         * Set of saved song IDs
+         * @type {Set<string>}
+         */
         this.savedSongs = new Set();
+
+        /**
+         * Library load state
+         * @type {boolean}
+         */
         this.libraryLoaded = false;
 
         this.init();
     }
 
+    /**
+     * Initialize Music Player
+     *
+     * Sets up event listeners, loads user library, and renders personalized sections.
+     *
+     * @function init
+     */
     init() {
         this.audio.addEventListener('ended', () => this.playNext());
         this.audio.addEventListener('timeupdate', () => this.updateProgress());

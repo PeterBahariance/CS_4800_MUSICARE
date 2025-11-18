@@ -1,4 +1,30 @@
-// Import Firebase modules
+/**
+ * @fileoverview Main Application Entry Point
+ *
+ * Core application module for the Musicare app (app.html). Handles:
+ * - Firebase authentication state management
+ * - Tab navigation system (Home, Library, etc.)
+ * - User profile bootstrapping
+ * - Sign out functionality
+ * - Integration with feature modules (friends, music library, player)
+ *
+ * This is the main orchestrator that ties together all app features and
+ * ensures users are authenticated before accessing the application.
+ *
+ * @author Musicare Development Team
+ * @version 1.0.0
+ * @since 2024-11-14
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js - Firebase core
+ * @requires https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js - Firebase authentication
+ * @requires ../config/firebase.js - Firebase configuration
+ * @requires ../features/friends/index.js - Friend system module
+ * @requires ../features/music/library.js - Music library view
+ *
+ * @example
+ * // This module is loaded via script tag in app.html:
+ * // <script type="module" src="../src/app/index.js"></script>
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
     getAuth,
@@ -9,32 +35,67 @@ import { firebaseConfig } from '../config/firebase.js';
 import '../features/friends/index.js'; // Import friend system
 import LibraryView from '../features/music/library.js';
 
-// Initialize Firebase
+/**
+ * Firebase Application Instance
+ *
+ * @constant {FirebaseApp} app
+ */
 const app = initializeApp(firebaseConfig);
+
+/**
+ * Firebase Authentication Service
+ *
+ * @constant {Auth} auth
+ */
 const auth = getAuth(app);
 
-// DOM Elements
+/**
+ * DOM Element References
+ *
+ * Cached references to frequently accessed DOM elements for performance.
+ */
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
 const signOutBtn = document.getElementById('sign-out-btn');
 
-// Check auth state
+/**
+ * Authentication State Monitor
+ *
+ * Monitors Firebase authentication state and handles:
+ * - Displaying user info when authenticated
+ * - Bootstrapping user profile from database
+ * - Redirecting to login when not authenticated
+ *
+ * @listens onAuthStateChanged
+ * @param {User|null} user - Firebase user object or null if not authenticated
+ */
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // User is signed in
+        // User is authenticated - show user info and bootstrap profile
         userInfo.style.display = 'block';
         userEmail.textContent = user.email;
 
         // Set up sign out button
         signOutBtn.addEventListener('click', handleSignOut);
+
+        // Load user profile from database
         bootstrapUserProfile(user);
     } else {
-        // User is signed out, redirect to login
+        // User is not authenticated - redirect to login page
         window.location.href = '../index.html';
     }
 });
 
-// Handle sign out
+/**
+ * Sign Out Handler
+ *
+ * Signs the user out of Firebase Authentication.
+ * Redirect to login page happens automatically via onAuthStateChanged.
+ *
+ * @async
+ * @function handleSignOut
+ * @throws {Error} Firebase sign out errors
+ */
 async function handleSignOut() {
     try {
         await firebaseSignOut(auth);
@@ -45,11 +106,46 @@ async function handleSignOut() {
     }
 }
 
-// Tab navigation
+/**
+ * Tab Navigation System
+ *
+ * Manages the single-page app navigation between different views
+ * (Home, Library, etc.) with smooth animations.
+ */
+
+/**
+ * Navigation Items
+ *
+ * @constant {NodeList} navItems - All navigation items with data-tab attribute
+ */
 const navItems = document.querySelectorAll('.nav-item[data-tab]');
+
+/**
+ * Current Active Tab
+ *
+ * @type {string} currentTab - ID of the currently active tab
+ */
 let currentTab = 'home';
+
+/**
+ * Library View Instance
+ *
+ * @type {LibraryView|null} libraryView - Instance of the music library view
+ */
 let libraryView = null;
 
+/**
+ * Show Tab Function
+ *
+ * Displays the selected tab content with smooth fade-in animation.
+ * Handles dynamic content loading from templates if needed.
+ *
+ * @function showTab
+ * @param {string} tabId - ID of the tab to display (e.g., 'home', 'library')
+ *
+ * @example
+ * showTab('library'); // Shows the library view
+ */
 function showTab(tabId) {
     // Get the main content area
     const mainContent = document.querySelector('.main-content');
@@ -84,14 +180,14 @@ function showTab(tabId) {
         }
     }
 
-    // Show the content section with a nice animation
+    // Show the content section with a nice fade-in animation
     if (contentSection) {
         contentSection.style.display = 'block';
         contentSection.style.opacity = '0';
         contentSection.style.transform = 'translateY(20px)';
         contentSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
 
-        // Trigger reflow
+        // Trigger reflow to ensure animation plays
         void contentSection.offsetWidth;
 
         // Animate in
