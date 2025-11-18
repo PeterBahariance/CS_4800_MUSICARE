@@ -8,7 +8,6 @@
     "build": "prisma generate && vite build",
     "preview": "vite preview --port 5173",
     "dev:express": "node backend/scripts/dev-server.js",
-    "vercel-build": "node vercel-build.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "postinstall": "prisma generate"

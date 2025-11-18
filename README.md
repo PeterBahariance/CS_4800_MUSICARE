@@ -11,8 +11,6 @@ CS_4800_MUSICARE/                    # Musicare - Music Care Application
 ├── package-lock.json               # Dependency lock file
 ├── vercel.json                      # Vercel deployment configuration
 ├── vite.config.js                   # Vite build configuration
-├── dev-server.js                    # Development server setup
-├── vercel-build.js                  # Vercel build script
 │
 ├── Frontend Pages
 │   ├── index.html                   # Landing/login page

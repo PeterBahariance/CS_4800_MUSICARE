@@ -37,35 +37,6 @@
                 <span class="nav-icon">🎧</span>
                 <span class="nav-text">My Library</span>
             </div>
-            <!-- TEMPORARILY HIDDEN TABS - Remove 'display: none;' to restore -->
-            <div class="nav-item" data-tab="about" style="display: none;">
-                <span class="nav-icon">ℹ️</span>
-                <span class="nav-text">About</span>
-            </div>
-            <div class="nav-item" data-tab="staff" style="display: none;">
-                <span class="nav-icon">👥</span>
-                <span class="nav-text">Team</span>
-            </div>
-            <div class="nav-item" data-tab="docs" style="display: none;">
-                <span class="nav-icon">📚</span>
-                <span class="nav-text">Docs</span>
-            </div>
-            <div class="nav-item" data-tab="sprints" style="display: none;">
-                <span class="nav-icon">🏃‍♂️</span>
-                <span class="nav-text">Sprints</span>
-            </div>
-            <div class="nav-item" data-tab="dailies" style="display: none;">
-                <span class="nav-icon">📅</span>
-                <span class="nav-text">Standups</span>
-            </div>
-            <div class="nav-item" data-tab="report" style="display: none;">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">Reports</span>
-            </div>
-            <div class="nav-item" data-tab="database" style="display: none;">
-                <span class="nav-icon">🗄️</span>
-                <span class="nav-text">Database Demo</span>
-            </div>
             <div class="nav-item" style="display: none;">
                 <span class="nav-icon">🔔</span>
                 <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
@@ -194,155 +165,8 @@
         </div>
     </div>
 
-    <!-- Popup Modal -->
-    <div class="popup-overlay" id="popup-overlay">
-        <div class="popup-content">
-            <div class="popup-header">
-                <h2 id="popup-title">Section Title</h2>
-                <button class="close-btn" id="close-popup">&times;</button>
-            </div>
-            <div class="popup-body" id="popup-body">
-                <!-- Content will be dynamically loaded here -->
-            </div>
-        </div>
-    </div>
-
     <!-- Hidden content templates -->
     <div class="content-templates" style="display: none;">
-        <div id="about-content">
-            <div class="section-content">
-                <p>Learn more about Musicare and our mission to provide music for health and well-being.</p>
-                <div class="feature-list">
-                    <h3>Our Mission</h3>
-                    <ul>
-                        <li>Curate music for therapeutic purposes</li>
-                        <li>Support mental health through sound</li>
-                        <li>Create personalized wellness experiences</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div id="staff-content">
-            <div class="section-content">
-                <p>Meet the talented individuals behind Musicare.</p>
-                <div class="team-grid">
-                    <div class="team-member">
-                        <h4>Development Team</h4>
-                        <p>Passionate developers creating innovative music therapy solutions</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="docs-content">
-            <div class="section-content">
-                <p>Access project documentation, guides, and technical specifications.</p>
-
-                <div class="file-upload-section">
-                    <h3>Upload Documentation</h3>
-                    <div class="file-upload-area" data-section="docs">
-                        <div class="upload-icon">📚</div>
-                        <p>Drop your .txt or .pdf files here or click to browse</p>
-                        <input type="file" id="docs-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('docs-file').click()">Choose
-                            Files</button>
-                    </div>
-                    <div class="uploaded-files" id="docs-files"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="sprints-content">
-            <div class="section-content">
-                <p>Track our development progress through sprint planning and retrospectives.</p>
-
-                <div class="file-upload-section">
-                    <h3>Upload Sprint Documents</h3>
-                    <div class="file-upload-area" data-section="sprints">
-                        <div class="upload-icon">🏃‍♂️</div>
-                        <p>Drop your .txt or .pdf files here or click to browse</p>
-                        <input type="file" id="sprints-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('sprints-file').click()">Choose
-                            Files</button>
-                    </div>
-                    <div class="uploaded-files" id="sprints-files"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="dailies-content">
-            <div class="section-content">
-                <p>Daily team check-ins, blockers, and progress updates.</p>
-
-                <div class="file-upload-section">
-                    <h3>Upload Standup Notes</h3>
-                    <div class="file-upload-area" data-section="dailies">
-                        <div class="upload-icon">📅</div>
-                        <p>Drop your .txt or .pdf files here or click to browse</p>
-                        <input type="file" id="dailies-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('dailies-file').click()">Choose
-                            Files</button>
-                    </div>
-                    <div class="uploaded-files" id="dailies-files"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="report-content">
-            <div class="section-content">
-                <p>Comprehensive project reports, analysis, and final deliverables.</p>
-
-                <div class="file-upload-section">
-                    <h3>Upload Project Reports</h3>
-                    <div class="file-upload-area" data-section="report">
-                        <div class="upload-icon">📊</div>
-                        <p>Drop your .txt or .pdf files here or click to browse</p>
-                        <input type="file" id="report-file" accept=".txt,.pdf" multiple>
-                        <button class="upload-btn" onclick="document.getElementById('report-file').click()">Choose
-                            Files</button>
-                    </div>
-                    <div class="uploaded-files" id="report-files"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="database-content">
-            <div class="section-content">
-                <p>Demonstrate basic database connectivity using Prisma and PostgreSQL.</p>
-
-                <div class="database-demo-section">
-                    <h3>People Table Demo</h3>
-                    <p>This demo shows a simple People table with 3 attributes: ID, First Name, and Last Name.</p>
-
-                    <div class="demo-controls">
-                        <button id="populate-db-btn" class="populate-btn">Populate Database</button>
-                        <button id="refresh-data-btn" class="refresh-btn">Refresh Data</button>
-                        <button id="clear-db-btn" class="clear-btn">Clear Database</button>
-                    </div>
-
-                    <div class="database-status" id="db-status">
-                        <p>Click "Populate Database" to add sample data to the People table.</p>
-                    </div>
-
-                    <div class="people-table-container" id="people-table-container" style="display: none;">
-                        <h4>People in Database:</h4>
-                        <table class="people-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>First Name</th>
-                                    <th>Last Name</th>
-                                </tr>
-                            </thead>
-                            <tbody id="people-table-body">
-                                <!-- Data will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div id="library-content">
             <div class="library-empty-state">
                 <h3>Loading your library...</h3>
@@ -359,10 +183,10 @@
             onAuthStateChanged
         } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-        // Import Firebase config from src/config/firebase.js
+        // Import Firebase config from frontend/src/config/firebase.js
         let firebaseConfig = {};
         try {
-            const { firebaseConfig: config } = await import('/src/config/firebase.js');
+            const { firebaseConfig: config } = await import('../src/config/firebase.js');
             firebaseConfig = config;
             console.log('Firebase config loaded successfully');
         } catch (error) {

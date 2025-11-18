@@ -18,8 +18,6 @@ CS_4800_MUSICARE/
 ├── package.json                        # Node.js project configuration
 ├── package-lock.json                   # Dependency lock file
 ├── vercel.json                         # Vercel deployment config
-├── vercel-build.js                     # Custom Vercel build script
-├── vercel-build.mjs                    # ES module build script
 ├── vite.config.js                      # Vite build tool configuration
 │
 ├── api/                                # Vercel API routes (legacy structure)
@@ -219,8 +217,8 @@ CS_4800_MUSICARE/
 - `backend/lib/database.js` - Database utilities
 
 ### Build/Deploy Files
-- `vercel-build.js` - Custom build script
-- `vercel-build.mjs` - ES module build script
+- `vite.config.js` - Vite build configuration
+- `vercel.json` - Vercel deployment configuration
 - `dist/` - Built files (auto-generated)
 
 ---

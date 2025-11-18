@@ -1,27 +1,93 @@
 /**
  * @fileoverview Library View Component
- * 
+ *
  * Manages the user's personal music library interface, displaying saved
  * playlists and songs with full CRUD operations and playback integration.
- * 
+ *
+ * Features:
+ * - Display saved playlists and songs
+ * - Create new playlists
+ * - Add/remove songs from playlists
+ * - Delete playlists
+ * - Play songs directly from library
+ * - Expand/collapse playlist details
+ * - Real-time library updates via custom events
+ * - Empty state handling
+ * - Loading states and error handling
+ *
  * @author Musicare Development Team
  * @version 1.0.0
  * @since 2024-11-14
+ * @requires /api/playlists - Playlist management API
+ * @requires /api/users - User library API
+ *
+ * @example
+ * // This module is imported in app/index.js:
+ * // import LibraryView from '../features/music/library.js';
+ * // const libraryView = new LibraryView();
+ * // libraryView.setUserContext(user);
  */
 
+/**
+ * Library View Class
+ *
+ * Main class managing the user's music library interface.
+ * Handles rendering, state management, and user interactions.
+ *
+ * @class LibraryView
+ */
 class LibraryView {
+    /**
+     * Initialize Library View
+     *
+     * Sets up the library view with initial state and event listeners.
+     *
+     * @constructor
+     */
     constructor() {
+        /**
+         * Current user object
+         * @type {Object|null}
+         */
         this.user = null;
+
+        /**
+         * Root DOM element for library content
+         * @type {HTMLElement|null}
+         */
         this.root = null;
+
+        /**
+         * Library state
+         * @type {Object}
+         * @property {Array<Object>} playlists - User's saved playlists
+         * @property {Array<Object>} songs - User's saved songs
+         * @property {boolean} initialized - Whether library has been loaded
+         */
         this.state = {
             playlists: [],
             songs: [],
             initialized: false
         };
+
+        /**
+         * Loading state
+         * @type {boolean}
+         */
         this.isLoading = false;
+
+        /**
+         * Set of expanded playlist IDs
+         * @type {Set<string>}
+         */
         this.expandedPlaylists = new Set();
 
-        // Listen for library changes from other components
+        /**
+         * Listen for library changes from other components
+         *
+         * Reloads library when changes are detected from music player
+         * or other components. Prevents infinite loops by checking source.
+         */
         window.addEventListener('musicare:library-changed', (event) => {
             if (event?.detail?.source === 'library') return;
             if (this.user?.id && this.root) {
