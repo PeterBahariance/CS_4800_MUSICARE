@@ -311,33 +311,6 @@
 
     <!-- Main app entry point -->
     <script type="module" src="./src/auth/index.js"></script>
-
-    <!-- Chatbot Popup window-->
-    <div id="chat-widget" style=" 
-      position: fixed; 
-      bottom: 20px; 
-      right: 20px; 
-      width: 350px; 
-      height: 450px; 
-      border: 1px solid #ccc; 
-      background: white; 
-      display: flex; 
-      flex-direction: column; 
-      border-radius: 10px; 
-      overflow: hidden; 
-    "> 
-
-  <div id="chat-messages" style="flex: 1; padding: 10px; overflow-y: auto;"></div> 
-  <div style="display: flex;"> 
-    <input id="chat-input" type="text" placeholder="Ask for playlist recommendations..."  
-           style="flex: 1; border: none; padding: 10px;" /> 
-    <button onclick="sendChat()"  
-            style="padding: 10px; border: none; background: #6a5acd; color: white;"> 
-      Send 
-    </button> 
-  </div> 
-</div> 
-<script src="chatbot.js"></script> 
     
 </body>
 </html>
