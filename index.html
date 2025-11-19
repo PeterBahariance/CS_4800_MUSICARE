@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Musicare - Music for Health & Well-being</title>
+<<<<<<< Updated upstream:index.html
     <link rel="stylesheet" href="/styles.css">
     <style>
         :root {
@@ -253,6 +254,9 @@
             font-weight: 500;
         }
     </style>
+=======
+    <link rel="stylesheet" href="index_styles.css">
+>>>>>>> Stashed changes:frontend/index.html
 </head>
 <body class="auth-page">
     <header class="auth-header">
@@ -281,6 +285,7 @@
                     <label for="login-password">Password</label>
                     <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
                     <div class="error-message" id="login-password-error"></div>
+<<<<<<< Updated upstream:index.html
         </div>
         
                 <button type="submit" class="btn btn-primary btn-block">Log In</button>
@@ -306,5 +311,34 @@
         
         <!-- Main app entry point -->
         <script type="module" src="./src/main.js"></script>
+=======
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                <div class="error-message" id="login-error" style="margin: 1rem 0; text-align: center;"></div>
+
+                <!-- Success message container -->
+                <div id="signup-success" class="success-message"
+                    style="display: none; margin: 1rem 0; padding: 0.75rem; background-color: #d4edda; color: #155724; border-radius: 4px; text-align: center;">
+                    <span id="success-message">Account created successfully! Please log in.</span>
+                    <div class="spinner-border spinner-border-sm text-success ms-2" role="status"
+                        style="vertical-align: middle;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="pages/signup.html" id="show-signup">Create account</a></p>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Demo section removed - users must authenticate to access the app -->
+    </div>
+    </div>
+
+    <!-- Main app entry point -->
+    <script type="module" src="./src/auth/index.js"></script>
+>>>>>>> Stashed changes:frontend/index.html
 </body>
 </html>
