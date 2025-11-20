@@ -341,6 +341,7 @@
                         </div>
 
                         <div class="profile-actions">
+                            <button id="view-user-library-btn" class="friend-action-btn primary">📚 View Library</button>
                             <button id="add-friend-btn" class="friend-action-btn primary">Add Friend</button>
                             <button id="cancel-request-btn" class="friend-action-btn secondary"
                                 style="display: none;">Cancel Request</button>
@@ -382,6 +383,24 @@
             <div class="popup-body">
                 <div id="friends-list">
                     <p class="loading-message">Loading friends...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Library Popup -->
+    <div class="popup-overlay" id="user-library-popup">
+        <div class="popup-content user-library-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div class="popup-header">
+                <h3 id="user-library-title">User's Library</h3>
+                <button class="close-btn" id="close-user-library-popup">&times;</button>
+            </div>
+            <div class="popup-body">
+                <div id="user-library-container">
+                    <div class="library-empty-state">
+                        <h3>Loading library...</h3>
+                        <p>Please wait while we load this user's music collection.</p>
+                    </div>
                 </div>
             </div>
         </div>

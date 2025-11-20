@@ -43,8 +43,12 @@ class LibraryView {
      * Sets up the library view with initial state and event listeners.
      *
      * @constructor
+     * @param {Object} options - Configuration options
+     * @param {boolean} options.readOnly - If true, disables editing features (for viewing other users)
+     * @param {string} options.viewingUserId - ID of user whose library is being viewed (for other users)
+     * @param {string} options.viewingUserName - Display name of user being viewed
      */
-    constructor() {
+    constructor(options = {}) {
         /**
          * Current user object
          * @type {Object|null}
@@ -56,6 +60,24 @@ class LibraryView {
          * @type {HTMLElement|null}
          */
         this.root = null;
+
+        /**
+         * Read-only mode (for viewing other users' libraries)
+         * @type {boolean}
+         */
+        this.readOnly = options.readOnly || false;
+
+        /**
+         * ID of user whose library is being viewed (if viewing another user)
+         * @type {string|null}
+         */
+        this.viewingUserId = options.viewingUserId || null;
+
+        /**
+         * Display name of user being viewed
+         * @type {string|null}
+         */
+        this.viewingUserName = options.viewingUserName || null;
 
         /**
          * Library state
@@ -87,13 +109,16 @@ class LibraryView {
          *
          * Reloads library when changes are detected from music player
          * or other components. Prevents infinite loops by checking source.
+         * Only active in non-read-only mode.
          */
-        window.addEventListener('musicare:library-changed', (event) => {
-            if (event?.detail?.source === 'library') return;
-            if (this.user?.id && this.root) {
-                this.loadLibrary();
-            }
-        });
+        if (!this.readOnly) {
+            window.addEventListener('musicare:library-changed', (event) => {
+                if (event?.detail?.source === 'library') return;
+                if (this.user?.id && this.root) {
+                    this.loadLibrary();
+                }
+            });
+        }
     }
 
     /**
@@ -237,12 +262,16 @@ class LibraryView {
      *
      * Fetches user's saved playlists and songs from the API.
      * Updates component state and triggers re-render.
+     * In read-only mode, fetches the viewed user's library instead.
      *
      * @async
      * @returns {Promise<void>}
      */
     async loadLibrary() {
-        if (!this.user?.id) {
+        // Determine which user's library to load
+        const targetUserId = this.readOnly ? this.viewingUserId : this.user?.id;
+
+        if (!targetUserId) {
             console.warn('[LibraryView] loadLibrary() called but no user ID');
             return;
         }
@@ -251,7 +280,7 @@ class LibraryView {
             return;
         }
 
-        console.log('[LibraryView] Starting library load for user:', this.user.id);
+        console.log('[LibraryView] Starting library load for user:', targetUserId, this.readOnly ? '(read-only)' : '(own library)');
         this.isLoading = true;
         this.render();
 
@@ -266,7 +295,7 @@ class LibraryView {
 
         try {
             console.log('[LibraryView] Fetching from API...');
-            const response = await fetch(`/api/library?userId=${this.user.id}`);
+            const response = await fetch(`/api/library?userId=${targetUserId}`);
 
             if (!response.ok) {
                 throw new Error(`Failed to load library: ${response.status} ${response.statusText}`);
@@ -445,9 +474,11 @@ class LibraryView {
                                 <button class="library-play-btn" data-action="play-playlist" data-playlist-id="${playlist.id}">
                                     ▶ Play
                                 </button>
-                                <button class="library-remove-btn" data-action="remove-playlist" data-playlist-id="${playlist.id}">
-                                    ✕
-                                </button>
+                                ${!this.readOnly ? `
+                                    <button class="library-remove-btn" data-action="remove-playlist" data-playlist-id="${playlist.id}">
+                                        ✕
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                         <div class="library-playlist-preview">
@@ -512,9 +543,11 @@ class LibraryView {
                             <button class="library-play-btn" data-action="play-song" data-song-id="${entry.song.id}">
                                 ▶
                             </button>
-                            <button class="library-remove-btn" data-action="remove-song" data-song-id="${entry.song.id}">
-                                ✕
-                            </button>
+                            ${!this.readOnly ? `
+                                <button class="library-remove-btn" data-action="remove-song" data-song-id="${entry.song.id}">
+                                    ✕
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 `).join('')}
@@ -721,6 +754,47 @@ class LibraryView {
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
+    }
+
+    /**
+     * Create User Library Viewer
+     *
+     * Static factory method to create a read-only library view for viewing
+     * another user's library. This is used when clicking "View Library" on
+     * a user's profile.
+     *
+     * @static
+     * @param {Object} user - User object whose library to view
+     * @param {string} user.id - User's database ID
+     * @param {string} user.displayName - User's display name
+     * @param {HTMLElement} containerElement - DOM element to render library in
+     * @returns {LibraryView} Read-only library view instance
+     *
+     * @example
+     * const viewer = LibraryView.createUserLibraryViewer(
+     *   { id: '123', displayName: 'Patrick' },
+     *   document.getElementById('user-library-container')
+     * );
+     */
+    static createUserLibraryViewer(user, containerElement) {
+        console.log('[LibraryView] Creating user library viewer for:', user.displayName);
+
+        const viewer = new LibraryView({
+            readOnly: true,
+            viewingUserId: user.id,
+            viewingUserName: user.displayName || user.username || 'User'
+        });
+
+        // Set a dummy user object (needed for some internal checks)
+        viewer.user = { id: user.id };
+
+        // Set the root element
+        viewer.root = containerElement;
+
+        // Load the library
+        viewer.loadLibrary();
+
+        return viewer;
     }
 }
 
