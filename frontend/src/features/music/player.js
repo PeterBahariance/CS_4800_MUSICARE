@@ -4,6 +4,7 @@
  * Comprehensive music player for the Musicare application with therapeutic
  * music playback, personalized recommendations, and library management.
  *
+ * 
  * Features:
  * - Audio playback with HTML5 Audio API
  * - Personalized playlist recommendations based on health goals
