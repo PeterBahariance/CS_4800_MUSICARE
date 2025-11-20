@@ -290,6 +290,22 @@ class FriendSystem {
             });
         }
 
+        // User library popup close button
+        const closeUserLibraryBtn = document.getElementById('close-user-library-popup');
+        if (closeUserLibraryBtn) {
+            closeUserLibraryBtn.addEventListener('click', () => {
+                this.hideUserLibraryPopup();
+            });
+        }
+
+        // View user library button
+        const viewUserLibraryBtn = document.getElementById('view-user-library-btn');
+        if (viewUserLibraryBtn) {
+            viewUserLibraryBtn.addEventListener('click', () => {
+                this.showUserLibrary();
+            });
+        }
+
         // Friend action buttons
         this.setupFriendActionButtons();
 
@@ -299,6 +315,7 @@ class FriendSystem {
                 this.hideProfilePopup();
                 this.hideFriendRequestsPopup();
                 this.hideFriendsListPopup();
+                this.hideUserLibraryPopup();
             }
         });
     }
@@ -620,6 +637,84 @@ class FriendSystem {
         document.getElementById('friends-list-popup').style.display = 'none';
     }
 
+    /**
+     * Show User Library
+     *
+     * Opens a modal displaying the selected user's music library.
+     * Uses the LibraryView component in read-only mode to show
+     * the user's saved playlists and songs.
+     *
+     * @async
+     * @function showUserLibrary
+     */
+    async showUserLibrary() {
+        if (!this.currentSelectedUser) {
+            console.error('🔍 FriendSystem: No user selected to view library');
+            return;
+        }
+
+        console.log('🔍 FriendSystem: Opening library for user:', this.currentSelectedUser);
+
+        // Import LibraryView dynamically
+        const LibraryView = (await import('../music/library.js')).default;
+
+        // Update popup title
+        const titleElement = document.getElementById('user-library-title');
+        if (titleElement) {
+            const userName = this.currentSelectedUser.displayName || this.currentSelectedUser.username || 'User';
+            titleElement.textContent = `${userName}'s Library`;
+        }
+
+        // Get container element
+        const container = document.getElementById('user-library-container');
+        if (!container) {
+            console.error('🔍 FriendSystem: Library container not found');
+            return;
+        }
+
+        // Clear container
+        container.innerHTML = `
+            <div class="library-empty-state">
+                <h3>Loading library...</h3>
+                <p>Please wait while we load this user's music collection.</p>
+            </div>
+        `;
+
+        // Show popup
+        document.getElementById('user-library-popup').style.display = 'flex';
+
+        // Create library viewer
+        try {
+            const viewer = LibraryView.createUserLibraryViewer(
+                this.currentSelectedUser,
+                container
+            );
+            console.log('🔍 FriendSystem: Library viewer created:', viewer);
+        } catch (error) {
+            console.error('🔍 FriendSystem: Error creating library viewer:', error);
+            container.innerHTML = `
+                <div class="library-empty-state">
+                    <h3>Unable to load library</h3>
+                    <p>${error.message || 'Please try again later.'}</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Hide User Library Popup
+     *
+     * Closes the user library modal.
+     *
+     * @function hideUserLibraryPopup
+     */
+    hideUserLibraryPopup() {
+        const popup = document.getElementById('user-library-popup');
+        if (popup) {
+            popup.style.display = 'none';
+        }
+    }
+
     async loadFriendsCount() {
         if (!this.currentUser) return;
 
@@ -682,6 +777,9 @@ class FriendSystem {
                         <div class="friend-status">Friends since ${new Date(friendship.createdAt).toLocaleDateString()}</div>
                     </div>
                     <div class="friend-actions">
+                        <button class="friend-action-btn primary" onclick="friendSystem.viewFriendLibrary('${friend.id}', '${(friend.displayName || friend.username || 'User').replace(/'/g, "\\'")}')">
+                            📚 View Library
+                        </button>
                         <button class="friend-action-btn message" onclick="friendSystem.messageFriend('${friend.id}')">
                             💬 Message
                         </button>
@@ -697,6 +795,68 @@ class FriendSystem {
     async messageFriend(friendId) {
         // Placeholder for messaging functionality
         this.showMessage('Messaging feature coming soon!', 'info');
+    }
+
+    /**
+     * View Friend Library
+     *
+     * Opens the library view for a friend from the friends list.
+     * This is called from the friends list popup when clicking "View Library".
+     *
+     * @async
+     * @function viewFriendLibrary
+     * @param {string} friendId - Friend's user ID
+     * @param {string} friendName - Friend's display name
+     */
+    async viewFriendLibrary(friendId, friendName) {
+        console.log('🔍 FriendSystem: Opening library for friend:', friendId, friendName);
+
+        // Import LibraryView dynamically
+        const LibraryView = (await import('../music/library.js')).default;
+
+        // Update popup title
+        const titleElement = document.getElementById('user-library-title');
+        if (titleElement) {
+            titleElement.textContent = `${friendName}'s Library`;
+        }
+
+        // Get container element
+        const container = document.getElementById('user-library-container');
+        if (!container) {
+            console.error('🔍 FriendSystem: Library container not found');
+            return;
+        }
+
+        // Clear container
+        container.innerHTML = `
+            <div class="library-empty-state">
+                <h3>Loading library...</h3>
+                <p>Please wait while we load this user's music collection.</p>
+            </div>
+        `;
+
+        // Show popup
+        document.getElementById('user-library-popup').style.display = 'flex';
+
+        // Hide friends list popup
+        this.hideFriendsListPopup();
+
+        // Create library viewer
+        try {
+            const viewer = LibraryView.createUserLibraryViewer(
+                { id: friendId, displayName: friendName },
+                container
+            );
+            console.log('🔍 FriendSystem: Library viewer created for friend:', viewer);
+        } catch (error) {
+            console.error('🔍 FriendSystem: Error creating library viewer:', error);
+            container.innerHTML = `
+                <div class="library-empty-state">
+                    <h3>Unable to load library</h3>
+                    <p>${error.message || 'Please try again later.'}</p>
+                </div>
+            `;
+        }
     }
 
     async removeFriend(friendId) {
