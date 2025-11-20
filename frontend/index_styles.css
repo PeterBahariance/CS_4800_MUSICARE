@@ -1,3 +1,9 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
     --primary-color: #4a90e2;
     --primary-dark: #357abd;
@@ -38,7 +44,7 @@ body {
     margin-bottom: 2.5rem;
 }
 
-.auth-header {
+header.auth-header {
     text-align: center;
     margin-bottom: 2.5rem;
 }
