@@ -1,0 +1,138 @@
+:root {
+    --msg-text-white-color: #FFFFFA;
+    --msg-secondary-color: #515052;
+    --msg-text-color: #333138;
+    --msg-highlight-color: #FF312E;
+    --msg-border-color: #000103;
+    --msg-dark-blue: #1d315a;
+}
+
+.messages-container {
+    background-color: var(--msg-secondary-color);
+    color: var(--msg-text-white-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.messages-header {
+    background-color: var(--msg-secondary-color);
+    display: flex;
+    flex-direction: row;
+    padding: 10px;
+    justify-content: space-evenly;
+}
+
+.messages-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.friends-sidebar {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--msg-dark-blue);
+    padding: 10px;
+    width: 30%;           
+}
+
+
+.friends-search {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    position: relative;
+}
+
+.friends-search input {
+    width: 100%;
+    padding: 8px 35px 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.friends-search .search-icon {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.friends-chat-list {
+    margin: auto;
+}
+
+.chat-area {
+    background-color: var(--msg-text-white-color);
+    display: flex;
+    flex-direction: column;
+    width: 70%;
+}
+
+.chat-header {
+    padding: 5px;
+}
+
+.chat-partner-info {
+    display: flex;
+    flex-direction: row;
+}
+
+.chat-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.chat-partner-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.chat-status {
+    font-size: 12px;
+    color: #666;
+}
+
+.message-input-area {
+    background-color: white;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+}
+
+.input-container input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+}
+
+.input-container button {
+    padding: 12px 24px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.input-container button:hover {
+    background: #0056b3;
+}
+
+.input-container button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+

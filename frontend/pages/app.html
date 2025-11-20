@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Musicare - Music for Health</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/messages.css">
 </head>
 
 <body>
@@ -36,6 +37,10 @@
             <div class="nav-item" data-tab="library">
                 <span class="nav-icon">🎧</span>
                 <span class="nav-text">My Library</span>
+            </div>
+            <div class="nav-item" data-tab="messages">
+                <span class="nav-icon">💬</span>
+                <span class="nav-text">Messages</span>
             </div>
             <div class="nav-item" style="display: none;">
                 <span class="nav-icon">🔔</span>
@@ -110,6 +115,57 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+
+        <div id="messages-content" class="content-section" style="display:none;">
+            <div class="messages-container">
+                <div class="messages-header">
+                    <h2>Messages</h2>
+                    <p class="messages-subtitle">Chat with your friends</p>
+                </div>
+                <div class="messages-layout">
+                    <!-- Friends List Sidebar -->
+                     <div class="friends-sidebar">
+                        <div class="friends-search">
+                            <input type="text" id="friends-search-input" placeholder="Search friends...">
+                            <div class="search-icon">🔍</div>
+                        </div>
+                        <div id="friends-chat-list" class="friends-chat-list">
+                            <div class="no-friends-message">
+                                No friends available for messaging
+                            </div>
+                        </div>
+                     </div>
+
+                     <!-- Chat area -->
+                      <div class="chat-area">
+                        <div class="chat-header">
+                            <div class="chat-partner-info">
+                                <div class="chat-avatar">👤</div>
+                                <div>
+                                    <div class="chat-partner-name">Select a friend to start chatting</div>
+                                    <div class="chat-status">Offline</div> 
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="messages-list" class="messages-list">
+                            <div class="welcome-message">
+                                <p>Select a friend from the sidebar to start messaging</p>
+                            </div>
+                        </div>
+
+                        <div class="message-input-area" >
+                            <div class="input-container">
+                                <input type="text" id="message-input" placeholder="Type a message...">
+                                <button id="send-message-btn">Send</button>
+                            </div>
+
+                        </div>
+                      </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -200,7 +256,7 @@
 
         // Export auth for other modules if needed
         window.auth = auth;
-
+        
         console.log('Firebase initialized with config:', {
             ...firebaseConfig,
             apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
