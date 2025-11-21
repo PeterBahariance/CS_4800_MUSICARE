@@ -88,6 +88,7 @@ class LibraryView {
          */
         this.state = {
             playlists: [],
+            myPlaylists: [],
             songs: [],
             initialized: false
         };
@@ -304,12 +305,14 @@ class LibraryView {
             const data = await response.json();
             console.log('[LibraryView] Loaded library data:', {
                 playlists: data.savedPlaylists?.length || 0,
+                myPlaylists: data.userPlaylists?.length || 0,
                 songs: data.savedSongs?.length || 0,
                 raw: data
             });
 
             this.state = {
                 playlists: data.savedPlaylists || [],
+                myPlaylists: data.userPlaylists || [],
                 songs: data.savedSongs || [],
                 initialized: true
             };
@@ -346,8 +349,12 @@ class LibraryView {
             return;
         }
 
+        const ownedPlaylistsHTML = this.renderOwnedPlaylists();
         const playlistsHTML = this.renderPlaylists();
         const songsHTML = this.renderSongs();
+        const ownedTitle = this.readOnly && this.viewingUserName
+            ? `${this.viewingUserName}'s Playlists`
+            : 'My Playlists';
 
         const fullHTML = `
             <div class="library-header">
@@ -360,6 +367,14 @@ class LibraryView {
 
             <div class="library-section">
                 <div class="library-section-header">
+                    <h3>${ownedTitle}</h3>
+                    <span>${this.state.myPlaylists.length} playlists</span>
+                </div>
+                ${ownedPlaylistsHTML}
+            </div>
+
+            <div class="library-section">
+                <div class="library-section-header">
                     <h3>Saved Playlists</h3>
                     <span>${this.state.playlists.length} saved</span>
                 </div>
@@ -368,8 +383,8 @@ class LibraryView {
 
             <div class="library-section">
                 <div class="library-section-header">
-                    <h3>Saved Songs</h3>
-                    <span>${this.state.songs.length} saved</span>
+                    <h3>Liked Songs</h3>
+                    <span>${this.state.songs.length} liked</span>
                 </div>
                 ${songsHTML}
             </div>
@@ -428,6 +443,99 @@ class LibraryView {
      *
      * @returns {string} HTML string for playlists section
      */
+    renderOwnedPlaylists() {
+        if (!this.state.myPlaylists || !this.state.myPlaylists.length) {
+            const message = this.readOnly
+                ? `${this.viewingUserName || 'This user'} hasn't created any playlists yet.`
+                : 'You haven’t created any playlists yet. Use the + icon next to any song to build one.';
+            return `
+                <div class="library-empty-state">
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        const playlistHTML = this.state.myPlaylists.map((entry, index) => {
+            if (!entry?.playlist) {
+                console.warn(`[LibraryView] Invalid owned playlist entry at index ${index}`, entry);
+                return '';
+            }
+
+            const playlist = entry.playlist;
+            const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
+            const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
+            const moodClass = playlist.mood || 'default';
+            const trackCount = playlist.trackCount ?? playlist.tracks?.length ?? 0;
+            const createdAt = entry.createdAt || playlist.createdAt || new Date();
+            const isExpanded = this.expandedPlaylists.has(playlist.id);
+            const tracks = playlist.tracks || [];
+            const tracksToShow = isExpanded ? tracks : tracks.slice(0, 3);
+            const hasMoreTracks = tracks.length > tracksToShow.length;
+
+            return `
+                <div class="library-playlist-card" data-playlist-id="${playlist.id}">
+                    <div class="library-playlist-cover ${moodClass}" ${coverStyle}></div>
+                    <div class="library-playlist-details">
+                        <div class="library-playlist-headline">
+                            <div>
+                                <h4>${playlist.title || 'Untitled Playlist'}</h4>
+                                <p>${formatMoodLabel(playlist.mood || 'wellness')} • ${trackCount} tracks</p>
+                            </div>
+                            <div class="library-playlist-actions">
+                                <button class="library-play-btn" data-action="play-playlist" data-playlist-id="${playlist.id}">
+                                    ▶ Play
+                                </button>
+                                ${!this.readOnly ? `
+                                    <button class="library-remove-btn" data-action="delete-user-playlist" data-playlist-id="${playlist.id}">
+                                        ✕
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="library-playlist-preview">
+                            ${tracksToShow.length
+                                ? tracksToShow.map(track => {
+                                    const originalIndex = (playlist.tracks || []).findIndex(t => t.id === track.id);
+                                    return `
+                                        <div class="preview-track ${isExpanded ? 'expanded' : ''}" 
+                                             data-action="play-owned-track"
+                                             data-playlist-id="${playlist.id}" 
+                                             data-song-id="${track.id || ''}"
+                                             data-track-index="${originalIndex}">
+                                            <div class="preview-track-text">
+                                                <span class="preview-track-name">${track.title || 'Unknown'}</span>
+                                                <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
+                                                ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
+                                            </div>
+                                            ${!this.readOnly && track.id ? `
+                                                <button class="library-remove-btn track-remove-btn" data-action="remove-user-playlist-track" data-playlist-id="${playlist.id}" data-song-id="${track.id}">
+                                                    ✕
+                                                </button>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')
+                                : '<div class="preview-track muted">Add songs to this playlist from the + button near any track.</div>'}
+                        </div>
+                        ${hasMoreTracks ? `
+                            <button class="library-expand-btn" data-action="toggle-playlist" data-playlist-id="${playlist.id}">
+                                ${isExpanded ? '▲ Show less' : `▼ Show all ${trackCount} tracks`}
+                            </button>
+                        ` : ''}
+                        <div class="library-playlist-meta">
+                            Created on ${new Date(createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).filter(Boolean).join('');
+
+        return `
+            <div class="library-playlists-grid">
+                ${playlistHTML}
+            </div>
+        `;
+    }
+
     renderPlaylists() {
         console.log('[LibraryView] renderPlaylists called, state.playlists:', this.state.playlists);
 
@@ -483,13 +591,22 @@ class LibraryView {
                         </div>
                         <div class="library-playlist-preview">
                             ${tracksToShow.length
-                                ? tracksToShow.map((track, idx) => `
-                                    <div class="preview-track ${isExpanded ? 'expanded' : ''}">
-                                        <span class="preview-track-name">${track.title || 'Unknown'}</span>
-                                        <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
-                                        ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
-                                    </div>
-                                `).join('')
+                                ? tracksToShow.map(track => {
+                                    const originalIndex = (playlist.tracks || []).findIndex(t => t.id === track.id);
+                                    return `
+                                        <div class="preview-track ${isExpanded ? 'expanded' : ''}"
+                                             data-action="play-saved-track"
+                                             data-playlist-id="${playlist.id}"
+                                             data-song-id="${track.id || ''}"
+                                             data-track-index="${originalIndex}">
+                                            <div class="preview-track-text">
+                                                <span class="preview-track-name">${track.title || 'Unknown'}</span>
+                                                <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
+                                                ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')
                                 : '<div class="preview-track muted">Track list unavailable</div>'}
                         </div>
                         ${hasMoreTracks ? `
@@ -525,7 +642,7 @@ class LibraryView {
         if (!this.state.songs.length) {
             return `
                 <div class="library-empty-state">
-                    <p>No songs saved yet. Use the heart icon next to any track to add it here.</p>
+                    <p>No liked songs yet. Use the heart icon next to any track to add one.</p>
                 </div>
             `;
         }
@@ -533,7 +650,7 @@ class LibraryView {
         return `
             <div class="library-song-list">
                 ${this.state.songs.map(entry => `
-                    <div class="library-song-row" data-song-id="${entry.song.id}">
+                    <div class="library-song-row" data-action="play-liked-track" data-song-id="${entry.song.id}">
                         <div class="song-main">
                             <div class="song-title">${entry.song.title}</div>
                             <div class="song-artist">${entry.song.artist}</div>
@@ -599,12 +716,64 @@ class LibraryView {
             });
         });
 
+        // Delete user-created playlist buttons
+        this.root.querySelectorAll('[data-action="delete-user-playlist"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const playlistId = btn.getAttribute('data-playlist-id');
+                this.deleteUserPlaylist(playlistId);
+            });
+        });
+
+        // Remove track from user playlist buttons
+        this.root.querySelectorAll('[data-action="remove-user-playlist-track"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const playlistId = btn.getAttribute('data-playlist-id');
+                const songId = btn.getAttribute('data-song-id');
+                this.removeSongFromUserPlaylist(playlistId, songId);
+            });
+        });
+
+        // Play owned playlist track
+        this.root.querySelectorAll('[data-action="play-owned-track"]').forEach(trackEl => {
+            trackEl.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('[data-action="remove-user-playlist-track"]');
+                if (removeBtn) return;
+
+                const playlistId = trackEl.getAttribute('data-playlist-id');
+                const songId = trackEl.getAttribute('data-song-id');
+                const trackIndex = parseInt(trackEl.getAttribute('data-track-index'), 10);
+                this.playOwnedPlaylistTrack(playlistId, songId, Number.isNaN(trackIndex) ? null : trackIndex);
+            });
+        });
+
+        // Play saved playlist track
+        this.root.querySelectorAll('[data-action="play-saved-track"]').forEach(trackEl => {
+            trackEl.addEventListener('click', () => {
+                const playlistId = trackEl.getAttribute('data-playlist-id');
+                const songId = trackEl.getAttribute('data-song-id');
+                const trackIndex = parseInt(trackEl.getAttribute('data-track-index'), 10);
+                this.playSavedPlaylistTrack(playlistId, songId, Number.isNaN(trackIndex) ? null : trackIndex);
+            });
+        });
+
         // Remove song buttons
         this.root.querySelectorAll('[data-action="remove-song"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const songId = btn.getAttribute('data-song-id');
                 this.removeItem('song', songId);
+            });
+        });
+
+        // Play liked song row
+        this.root.querySelectorAll('[data-action="play-liked-track"]').forEach(row => {
+            row.addEventListener('click', (e) => {
+                const blocked = e.target.closest('[data-action="remove-song"], .library-play-btn');
+                if (blocked) return;
+                const songId = row.getAttribute('data-song-id');
+                this.playSong(songId);
             });
         });
 
@@ -663,7 +832,8 @@ class LibraryView {
      * @param {string} playlistId - ID of playlist to play
      */
     playPlaylist(playlistId) {
-        const entry = this.state.playlists.find(item => item.playlist.id === playlistId);
+        const entry = this.state.playlists.find(item => item.playlist.id === playlistId)
+            || this.state.myPlaylists.find(item => item.playlist.id === playlistId);
         if (!entry) {
             this.showToast('Unable to play playlist. Please try again.');
             return;
@@ -676,6 +846,85 @@ class LibraryView {
         }
 
         player.playLibraryPlaylist(entry.playlist);
+    }
+
+    /**
+     * Play a specific track from a user-owned playlist.
+     *
+     * @param {string} playlistId
+     * @param {string} songId
+     * @param {number|null} trackIndex
+     */
+    playOwnedPlaylistTrack(playlistId, songId, trackIndex = null) {
+        const entry = this.state.myPlaylists.find(item => item.playlist.id === playlistId);
+        if (!entry) {
+            this.showToast('Playlist unavailable. Please refresh.');
+            return;
+        }
+
+        const player = window.musicPlayer;
+        if (!player || typeof player.playLibraryPlaylist !== 'function' || typeof player.playTrack !== 'function') {
+            this.showToast('Player is still initializing. Please try again.');
+            return;
+        }
+
+        const playlist = entry.playlist;
+        if (!playlist?.tracks?.length) {
+            this.showToast('This playlist has no playable tracks yet.');
+            return;
+        }
+
+        const resolvedIndex = (trackIndex !== null && trackIndex >= 0)
+            ? trackIndex
+            : playlist.tracks.findIndex(track => track.id === songId);
+
+        if (resolvedIndex < 0) {
+            this.showToast('Track unavailable. Please refresh.');
+            return;
+        }
+
+        player.playLibraryPlaylist(playlist);
+        player.playTrack(resolvedIndex);
+    }
+
+    /**
+     * Play a specific track from a saved playlist.
+     *
+     * @param {string} playlistId
+     * @param {string} songId
+     * @param {number|null} trackIndex
+     */
+    playSavedPlaylistTrack(playlistId, songId, trackIndex = null) {
+        const entry = this.state.playlists.find(item => item.playlist.id === playlistId);
+        if (!entry) {
+            this.showToast('Playlist unavailable. Please refresh.');
+            return;
+        }
+
+        const player = window.musicPlayer;
+        if (!player || typeof player.playLibraryPlaylist !== 'function' || typeof player.playTrack !== 'function') {
+            this.showToast('Player is still initializing. Please try again.');
+            return;
+        }
+
+        const playlist = entry.playlist;
+        const tracks = playlist?.tracks || playlist?.previewTracks || [];
+        if (!tracks.length) {
+            this.showToast('Track list unavailable for this playlist.');
+            return;
+        }
+
+        const resolvedIndex = (trackIndex !== null && trackIndex >= 0)
+            ? trackIndex
+            : tracks.findIndex(track => track.id === songId);
+
+        if (resolvedIndex < 0) {
+            this.showToast('Track unavailable. Please refresh.');
+            return;
+        }
+
+        player.playLibraryPlaylist(playlist);
+        player.playTrack(resolvedIndex);
     }
 
     /**
@@ -738,6 +987,118 @@ class LibraryView {
         } catch (error) {
             console.error('LibraryView: unable to remove item', error);
             this.showToast('Unable to update library. Please try again.');
+        }
+    }
+
+    /**
+     * Remove a specific song from a user-created playlist.
+     *
+     * @param {string} playlistId - Playlist ID
+     * @param {string} songId - Song ID to remove
+     */
+    async removeSongFromUserPlaylist(playlistId, songId) {
+        if (!this.user?.id || !playlistId || !songId) return;
+
+        try {
+            const response = await fetch('/api/playlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'removeSong',
+                    playlistId,
+                    songId,
+                    userId: this.user.id
+                })
+            });
+
+            if (!response.ok) {
+                let details = 'Unable to update playlist.';
+                try {
+                    const data = await response.json();
+                    details = data?.error || data?.details || details;
+                } catch {
+                    // ignore parse errors
+                }
+                throw new Error(details);
+            }
+
+            const payload = await response.json();
+            const updatedPlaylist = payload?.playlist;
+
+            if (updatedPlaylist) {
+                this.state.myPlaylists = this.state.myPlaylists.map(entry => {
+                    if (entry.playlist.id === playlistId) {
+                        return {
+                            ...entry,
+                            playlist: updatedPlaylist,
+                            updatedAt: updatedPlaylist.updatedAt || entry.updatedAt
+                        };
+                    }
+                    return entry;
+                });
+            } else {
+                // Fallback: remove song locally
+                this.state.myPlaylists = this.state.myPlaylists.map(entry => {
+                    if (entry.playlist.id === playlistId) {
+                        return {
+                            ...entry,
+                            playlist: {
+                                ...entry.playlist,
+                                tracks: (entry.playlist.tracks || []).filter(track => track.id !== songId),
+                                trackCount: Math.max((entry.playlist.trackCount || entry.playlist.tracks?.length || 0) - 1, 0)
+                            }
+                        };
+                    }
+                    return entry;
+                });
+            }
+
+            this.showToast('Removed from playlist.');
+
+            window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                detail: {
+                    entityType: 'playlist',
+                    entityId: playlistId,
+                    source: 'library',
+                    reason: 'user-playlist-track-removed'
+                }
+            }));
+
+            this.render();
+        } catch (error) {
+            console.error('LibraryView: unable to remove playlist track', error);
+            this.showToast(error.message || 'Unable to remove song from playlist.');
+        }
+    }
+
+    /**
+     * Delete a user-created playlist entirely.
+     *
+     * @param {string} playlistId - Playlist ID to delete
+     */
+    async deleteUserPlaylist(playlistId) {
+        if (!playlistId || this.readOnly) return;
+
+        try {
+            const response = await fetch(`/api/playlists?id=${playlistId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete playlist');
+            }
+
+            this.state.myPlaylists = this.state.myPlaylists.filter(entry => entry?.playlist?.id !== playlistId);
+
+            window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                detail: { entityType: 'playlist', entityId: playlistId, source: 'library', reason: 'user-playlist-deleted' }
+            }));
+
+            this.render();
+            this.showToast('Playlist deleted.');
+        } catch (error) {
+            console.error('LibraryView: unable to delete user playlist', error);
+            this.showToast('Unable to delete playlist. Please try again.');
         }
     }
 

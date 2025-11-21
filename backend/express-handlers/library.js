@@ -130,9 +130,10 @@ async function handleGetLibrary(req, res) {
     }
 
     try {
-        const [savedPlaylists, savedSongs] = await Promise.all([
+        const [savedPlaylists, savedSongs, userPlaylists] = await Promise.all([
             fetchSavedPlaylists(userId),
-            fetchSavedSongs(userId)
+            fetchSavedSongs(userId),
+            fetchUserPlaylists(userId)
         ]);
 
         return res.status(200).json({
@@ -147,6 +148,11 @@ async function handleGetLibrary(req, res) {
                 savedAt: entry.createdAt,
                 context: entry.context,
                 song: formatSong(entry.song)
+            })),
+            userPlaylists: userPlaylists.map(playlist => ({
+                createdAt: playlist.createdAt,
+                updatedAt: playlist.updatedAt,
+                playlist: formatPlaylist(playlist)
             }))
         });
     } catch (error) {
@@ -276,6 +282,13 @@ async function fetchSavedPlaylists(userId) {
                     playlistSongs: {
                         include: { song: true },
                         orderBy: { position: 'asc' }
+                    },
+                    creator: {
+                        select: {
+                            id: true,
+                            username: true,
+                            displayName: true
+                        }
                     }
                 }
             }
@@ -298,6 +311,36 @@ async function fetchSavedSongs(userId) {
     return await prisma.userSavedSong.findMany({
         where: { userId },
         include: { song: true },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+/**
+ * Fetch User-Created Playlists
+ *
+ * Retrieves playlists the user has created themselves.
+ *
+ * @async
+ * @function fetchUserPlaylists
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of playlist records
+ */
+async function fetchUserPlaylists(userId) {
+    return await prisma.playlist.findMany({
+        where: { createdBy: userId },
+        include: {
+            playlistSongs: {
+                include: { song: true },
+                orderBy: { position: 'asc' }
+            },
+            creator: {
+                select: {
+                    id: true,
+                    username: true,
+                    displayName: true
+                }
+            }
+        },
         orderBy: { createdAt: 'desc' }
     });
 }
@@ -467,6 +510,14 @@ function formatPlaylist(playlist) {
         mood: playlist.mood,
         coverImage: playlist.coverImage,
         verified: playlist.verified,
+        ownerId: playlist.createdBy || null,
+        creator: playlist.creator ? {
+            id: playlist.creator.id,
+            username: playlist.creator.username,
+            displayName: playlist.creator.displayName
+        } : null,
+        createdAt: playlist.createdAt,
+        updatedAt: playlist.updatedAt,
         trackCount: sortedSongs.length,
         previewTracks: sortedSongs.slice(0, 3).map(ps => ({
             ...formatSong(ps.song),

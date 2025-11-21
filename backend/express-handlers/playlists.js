@@ -383,6 +383,328 @@ async function createPlaylist(req, res) {
 }
 
 /**
+ * PATCH Request Handler - Update Existing Playlist
+ *
+ * Supports incremental playlist updates such as adding tracks to
+ * user-created playlists.
+ *
+ * @async
+ * @function updatePlaylist
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+async function updatePlaylist(req, res) {
+  console.log('✏️ Playlists API: PATCH request received');
+
+  const { action } = req.body || {};
+
+  if (!action) {
+    return res.status(400).json({
+      error: 'Action is required',
+      details: 'Specify an action (e.g., addSong) to update a playlist',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (action === 'addSong') {
+    return await handleAddSongToPlaylist(req, res);
+  }
+
+  return res.status(400).json({
+    error: 'Unsupported action',
+    details: `${action} is not supported for playlist updates`,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Handle adding an existing song to a user-created playlist.
+ *
+ * @async
+ * @function handleAddSongToPlaylist
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+async function handleAddSongToPlaylist(req, res) {
+  const { playlistId, songId, userId, track } = req.body || {};
+
+  if (!playlistId || !userId) {
+    return res.status(400).json({
+      error: 'playlistId and userId are required',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (!songId && !track) {
+    return res.status(400).json({
+      error: 'Song reference missing',
+      details: 'Provide an existing songId or track metadata so we can save it.',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  try {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        playlistSongs: {
+          include: { song: true },
+          orderBy: { position: 'asc' }
+        },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true
+          }
+        }
+      }
+    });
+
+    if (!playlist) {
+      return res.status(404).json({
+        error: 'Playlist not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (playlist.createdBy !== userId) {
+      return res.status(403).json({
+        error: 'You do not have permission to edit this playlist',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const songRecord = await resolveSongRecord(songId, track);
+
+    if (!songRecord) {
+      return res.status(404).json({
+        error: 'Song not found',
+        details: 'Unable to locate or create this song.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const resolvedSongId = songRecord.id;
+
+    const existingEntry = await prisma.playlistSong.findUnique({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId: resolvedSongId
+        }
+      }
+    });
+
+    if (existingEntry) {
+      return res.status(200).json({
+        message: 'Song already in playlist',
+        playlist: formatPlaylistResponse(playlist),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const lastPosition = playlist.playlistSongs.reduce((max, current) => {
+      const position = typeof current.position === 'number' ? current.position : 0;
+      return Math.max(max, position);
+    }, -1);
+
+    await prisma.playlistSong.create({
+      data: {
+        playlistId,
+        songId: resolvedSongId,
+        position: lastPosition + 1
+      }
+    });
+
+    const updatedPlaylist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        playlistSongs: {
+          include: { song: true },
+          orderBy: { position: 'asc' }
+        },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      message: 'Song added to playlist',
+      playlist: formatPlaylistResponse(updatedPlaylist),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('🚨 Playlists API: Error updating playlist:', error);
+    return res.status(500).json({
+      error: 'Failed to update playlist',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Ensure a song exists for playlist operations. Attempts to resolve by ID,
+ * jamendoId/source ID, or creates a new record from provided metadata.
+ *
+ * @param {string} songId
+ * @param {Object} track
+ * @returns {Promise<Object|null>}
+ */
+async function resolveSongRecord(songId, track) {
+  let song = null;
+
+  if (songId) {
+    song = await prisma.song.findUnique({ where: { id: songId } });
+  }
+
+  const jamendoHint = track?.jamendoId || track?.id || null;
+
+  if (!song && jamendoHint) {
+    song = await prisma.song.findUnique({ where: { jamendoId: jamendoHint } });
+  }
+
+  if (!song && track) {
+    const durationValue = typeof track.duration === 'number'
+      ? track.duration
+      : Number(track.duration) || 0;
+
+    const newSongData = {
+      title: track.title || 'Untitled Track',
+      artist: track.artist || 'Unknown Artist',
+      duration: durationValue,
+      audioUrl: track.audioUrl || '',
+      albumArt: track.albumArt || null,
+      jamendoId: jamendoHint || null
+    };
+
+    if (jamendoHint) {
+      newSongData.id = jamendoHint;
+    }
+
+    song = await prisma.song.create({ data: newSongData });
+  }
+
+  return song;
+}
+
+/**
+ * Handle removing a song from a user-owned playlist.
+ *
+ * @async
+ * @function handleRemoveSongFromPlaylist
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+async function handleRemoveSongFromPlaylist(req, res) {
+  const { playlistId, songId, userId } = req.body || {};
+
+  if (!playlistId || !songId || !userId) {
+    return res.status(400).json({
+      error: 'playlistId, songId, and userId are required',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  try {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        playlistSongs: {
+          include: { song: true },
+          orderBy: { position: 'asc' }
+        },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true
+          }
+        }
+      }
+    });
+
+    if (!playlist) {
+      return res.status(404).json({
+        error: 'Playlist not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (playlist.createdBy !== userId) {
+      return res.status(403).json({
+        error: 'You do not have permission to edit this playlist',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const existingEntry = await prisma.playlistSong.findUnique({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId
+        }
+      }
+    });
+
+    if (!existingEntry) {
+      return res.status(404).json({
+        error: 'Song not found in playlist',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    await prisma.playlistSong.delete({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId
+        }
+      }
+    });
+
+    const updatedPlaylist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        playlistSongs: {
+          include: { song: true },
+          orderBy: { position: 'asc' }
+        },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      message: 'Song removed from playlist',
+      playlist: formatPlaylistResponse(updatedPlaylist),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('🚨 Playlists API: Error removing playlist song:', error);
+    return res.status(500).json({
+      error: 'Failed to remove song from playlist',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+/**
  * DELETE Request Handler - Remove Playlist
  *
  * Permanently deletes a playlist and all its associated relationships.
@@ -471,6 +793,41 @@ async function deletePlaylist(req, res) {
 }
 
 /**
+ * Normalize playlist response shape for frontend consumption.
+ *
+ * @param {Object} playlist - Playlist with songs/creator relations
+ * @returns {Object|null} Formatted playlist payload
+ */
+function formatPlaylistResponse(playlist) {
+  if (!playlist) return null;
+
+  const sortedSongs = [...(playlist.playlistSongs || [])].sort((a, b) => a.position - b.position);
+
+  return {
+    id: playlist.id,
+    title: playlist.title,
+    description: playlist.description,
+    mood: playlist.mood,
+    verified: playlist.verified,
+    coverImage: playlist.coverImage,
+    createdBy: playlist.createdBy,
+    creator: playlist.creator,
+    createdAt: playlist.createdAt,
+    updatedAt: playlist.updatedAt,
+    trackCount: sortedSongs.length,
+    tracks: sortedSongs.map(entry => ({
+      id: entry.song.id,
+      title: entry.song.title,
+      artist: entry.song.artist,
+      duration: entry.song.duration,
+      audioUrl: entry.song.audioUrl,
+      albumArt: entry.song.albumArt,
+      position: entry.position
+    }))
+  };
+}
+
+/**
  * Main API Handler - Playlist Operations Router
  *
  * Central request router for all playlist-related operations. Handles CORS,
@@ -513,7 +870,7 @@ export default async function handler(req, res) {
    * Note: Enhanced CORS headers for Vercel compatibility
    */
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   /**
@@ -584,7 +941,18 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      const action = req.body?.action || req.query?.action;
+      if (action === 'addSong') {
+        return await handleAddSongToPlaylist(req, res);
+      }
+      if (action === 'removeSong') {
+        return await handleRemoveSongFromPlaylist(req, res);
+      }
       return await createPlaylist(req, res);
+    }
+
+    if (req.method === 'PATCH') {
+      return await updatePlaylist(req, res);
     }
 
     if (req.method === 'DELETE') {
@@ -601,8 +969,8 @@ export default async function handler(req, res) {
     console.log('🚨 Playlists API: Unsupported method -', req.method);
     return res.status(405).json({
       error: 'Method not allowed',
-      details: `${req.method} method is not supported. Use GET, POST, or DELETE.`,
-      supportedMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+      details: `${req.method} method is not supported. Use GET, POST, PATCH, or DELETE.`,
+      supportedMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       timestamp: new Date().toISOString()
     });
 
