@@ -37,6 +37,10 @@
                 <span class="nav-icon">🎧</span>
                 <span class="nav-text">My Library</span>
             </div>
+            <div class="nav-item" data-tab="friends-feed">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Friends Posts</span>
+            </div>
             <div class="nav-item" style="display: none;">
                 <span class="nav-icon">🔔</span>
                 <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
@@ -111,6 +115,20 @@
                 </div>
 
             </div>
+
+            <div class="friends-feed-container">
+                <div class="friends-feed-header">
+                    <div>
+                        <h2>Friends Posts</h2>
+                        <p class="friends-feed-subtitle">See what playlists your friends are sharing.</p>
+                    </div>
+                </div>
+                <div id="friends-posts-feed" class="friends-posts-feed">
+                    <div class="section-empty-state">
+                        Sign in to see what your friends are sharing.
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -171,6 +189,21 @@
             <div class="library-empty-state">
                 <h3>Loading your library...</h3>
                 <p>Your saved playlists and songs will appear here shortly.</p>
+            </div>
+        </div>
+        <div class="friends-feed-template">
+            <div class="friends-feed-container">
+                <div class="friends-feed-header">
+                    <div>
+                        <h2>Friends Posts</h2>
+                        <p class="friends-feed-subtitle">See what playlists your friends are sharing.</p>
+                    </div>
+                </div>
+                <div class="friends-posts-feed">
+                    <div class="section-empty-state">
+                        Sign in to see what your friends are sharing.
+                    </div>
+                </div>
             </div>
         </div>
     </div>

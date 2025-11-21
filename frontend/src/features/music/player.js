@@ -197,10 +197,48 @@ class MusicPlayer {
         this.savedSongs = new Set();
 
         /**
+         * Array of playlists created by the user
+         * @type {Array<Object>}
+         */
+        this.userPlaylists = [];
+
+        /**
+         * Set of song IDs that already exist inside user-created playlists
+         * @type {Set<string>}
+         */
+        this.userPlaylistSongIds = new Set();
+
+        /**
+         * State + DOM references for the add-to-playlist modal
+         * @type {Object|null}
+         */
+        this.playlistModalState = null;
+        this.playlistModalOverlay = null;
+        this.playlistModalContent = null;
+        this.boundPlaylistModalKeydown = null;
+
+        /**
          * Library load state
          * @type {boolean}
          */
         this.libraryLoaded = false;
+
+        /**
+         * Friends feed state
+         */
+        this.friendPosts = [];
+        this.friendPostsLoaded = false;
+        this.friendPostsLoading = false;
+
+        // Listen for when a new friends-feed page is cloned
+        window.addEventListener('musicare:friends-feed-cloned', () => {
+            // Re-render friends posts to all containers (including the newly cloned one)
+            if (this.friendPostsLoaded && this.friendPosts.length > 0) {
+                this.renderFriendsPosts();
+            } else if (!this.friendPostsLoading) {
+                this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
+            }
+        });
 
         this.init();
     }
@@ -251,6 +289,12 @@ class MusicPlayer {
                 this.playLibrarySong(song);
             }
         });
+
+        window.addEventListener('musicare:friends-feed-updated', () => {
+            if (this.userContext?.id) {
+                this.loadFriendsPosts(true);
+            }
+        });
     }
 
     bootstrap() {
@@ -260,6 +304,7 @@ class MusicPlayer {
             this.renderEmptyState('Sign in to unlock personalized playlists tailored for you.');
             this.updateStatus('Sign in to unlock personalized playlists.');
             this.updateHomeSummary();
+            this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
         }
     }
 
@@ -337,8 +382,15 @@ class MusicPlayer {
     async initializeForUser() {
         if (!this.userContext) return;
 
+        this.friendPosts = [];
+        this.friendPostsLoaded = false;
+        this.renderFriendsPostsLoading();
+
         await this.loadLibraryState();
-        await this.loadPlaylistSections();
+        await Promise.all([
+            this.loadPlaylistSections(),
+            this.loadFriendsPosts()
+        ]);
     }
 
     updateStatus(message) {
@@ -384,16 +436,78 @@ class MusicPlayer {
             }
 
             const data = await response.json();
+            const userPostData = Array.isArray(data.userPlaylistPosts) ? data.userPlaylistPosts : [];
+
             this.savedPlaylists = new Set(
                 (data.savedPlaylists || []).map(entry => entry.playlist.id)
             );
             this.savedSongs = new Set(
                 (data.savedSongs || []).map(entry => entry.song.id)
             );
+            this.userPlaylists = (data.userPlaylists || [])
+                .map(entry => this.normalizeUserPlaylist(entry))
+                .filter(Boolean);
+            this.userPlaylistPosts = userPostData;
+            this.rebuildUserPlaylistSongIndex();
+            this.refreshPlaylistSaveIndicators();
             this.libraryLoaded = true;
         } catch (error) {
             console.error('Unable to load library state:', error);
         }
+    }
+
+    normalizeUserPlaylist(entry) {
+        if (!entry) return null;
+        const playlist = entry.playlist || entry;
+        if (!playlist?.id) return null;
+
+        return {
+            id: playlist.id,
+            title: playlist.title || 'Untitled Playlist',
+            description: playlist.description || '',
+            mood: playlist.mood || 'wellness',
+            coverImage: playlist.coverImage,
+            tracks: Array.isArray(playlist.tracks) ? playlist.tracks : [],
+            trackCount: playlist.trackCount ?? (playlist.tracks?.length || 0),
+            createdAt: entry.createdAt || playlist.createdAt,
+            updatedAt: entry.updatedAt || playlist.updatedAt
+        };
+    }
+
+    rebuildUserPlaylistSongIndex() {
+        this.userPlaylistSongIds = new Set();
+        (this.userPlaylists || []).forEach(playlist => {
+            (playlist.tracks || []).forEach(track => {
+                if (track?.id) {
+                    this.userPlaylistSongIds.add(track.id);
+                }
+            });
+        });
+    }
+
+    isSongInUserPlaylist(trackId) {
+        if (!trackId) return false;
+        return this.userPlaylistSongIds.has(trackId);
+    }
+
+    updatePlaylistSaveButtons(trackId) {
+        const isInPlaylist = this.isSongInUserPlaylist(trackId);
+        const buttons = document.querySelectorAll(`[data-track-id="${trackId}"] .playlist-save-btn`);
+        buttons.forEach(button => {
+            button.classList.toggle('saved', isInPlaylist);
+            button.textContent = isInPlaylist ? '✓' : '+';
+        });
+    }
+
+    refreshPlaylistSaveIndicators() {
+        const buttons = document.querySelectorAll('.playlist-save-btn');
+        buttons.forEach(button => {
+            const trackId = button.getAttribute('data-track-id');
+            if (!trackId) return;
+            const inPlaylist = this.isSongInUserPlaylist(trackId);
+            button.classList.toggle('saved', inPlaylist);
+            button.textContent = inPlaylist ? '✓' : '+';
+        });
     }
 
     async loadPlaylistSections() {
@@ -557,6 +671,290 @@ class MusicPlayer {
         `;
     }
 
+    getFriendsFeedContainers() {
+        const containers = [
+            document.getElementById('friends-posts-feed'),
+            document.getElementById('friends-posts-feed-panel'),
+            document.getElementById('friends-posts-feed-inline')
+        ];
+
+        if (Array.isArray(window.musicareFriendsFeedContainers)) {
+            window.musicareFriendsFeedContainers.forEach(container => {
+                if (container && !containers.includes(container)) {
+                    containers.push(container);
+                }
+            });
+        }
+
+        return containers.filter(Boolean);
+    }
+
+    renderFriendsPostsLoading() {
+        this.getFriendsFeedContainers().forEach(container => {
+            if (!container) return;
+            container.innerHTML = `
+                <div class="friends-posts-state loading">
+                    <div class="friends-posts-spinner"></div>
+                    <p>Loading posts from your friends...</p>
+                </div>
+            `;
+        });
+    }
+
+    renderFriendsPostsEmpty(message = 'No posts from friends yet.') {
+        this.getFriendsFeedContainers().forEach(container => {
+            if (!container) return;
+            container.innerHTML = `
+                <div class="friends-posts-state empty">
+                    <p>${message}</p>
+                </div>
+            `;
+        });
+    }
+
+    renderFriendsPosts() {
+        const containers = this.getFriendsFeedContainers();
+        if (!containers.length) return;
+
+        const visiblePosts = this.friendPosts.filter(post => post && post.playlist).slice(0, 5);
+
+        if (!visiblePosts.length) {
+            this.renderFriendsPostsEmpty('No posts from friends yet. Encourage them to share a playlist!');
+            return;
+        }
+
+        const createFeedContent = () => {
+            const fragment = document.createDocumentFragment();
+            visiblePosts.forEach(post => {
+                const card = this.createFriendPostCard(post);
+                if (card) {
+                    fragment.appendChild(card);
+                }
+            });
+            return fragment;
+        };
+
+        containers.forEach(container => {
+            container.innerHTML = '';
+            container.appendChild(createFeedContent());
+        });
+    }
+
+    createFriendPostCard(post) {
+        if (!post?.playlist) return null;
+
+        const playlist = post.playlist;
+        const isOwnPost = this.userContext?.id && post.author?.id && post.author.id === this.userContext.id;
+        const authorName = isOwnPost
+            ? 'You'
+            : (post.author?.displayName || post.author?.username || 'Friend');
+        const avatarSource = post.author?.displayName || post.author?.username || 'Friend';
+        const initials = (avatarSource.match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase() || '♪';
+        const timeAgo = this.formatRelativeTime(post.createdAt);
+        const caption = (post.caption || '').trim();
+        const isSaved = this.savedPlaylists.has(playlist.id);
+        const moodLabel = formatMoodLabel(playlist.mood || 'wellness');
+        const tracks = Array.isArray(playlist.tracks) ? playlist.tracks : [];
+        const previewTracks = tracks.slice(0, 3);
+
+        const card = document.createElement('div');
+        card.className = 'friend-post-card';
+        card.dataset.playlistId = playlist.id;
+
+        const header = document.createElement('div');
+        header.className = 'friend-post-header';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'friend-post-avatar';
+        avatar.textContent = initials;
+
+        const authorBlock = document.createElement('div');
+        authorBlock.className = 'friend-post-author-block';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'friend-post-author';
+        nameEl.textContent = authorName;
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'friend-post-time';
+        timeEl.textContent = timeAgo;
+
+        authorBlock.appendChild(nameEl);
+        authorBlock.appendChild(timeEl);
+        header.appendChild(avatar);
+        header.appendChild(authorBlock);
+        card.appendChild(header);
+
+        if (caption) {
+            const captionEl = document.createElement('p');
+            captionEl.className = 'friend-post-caption';
+            captionEl.textContent = caption;
+            card.appendChild(captionEl);
+        }
+
+        const playlistCard = document.createElement('div');
+        playlistCard.className = 'library-playlist-card friend-post-playlist-card';
+        playlistCard.dataset.sharedPlaylistId = playlist.id;
+        playlistCard.dataset.authorId = post.author?.id || '';
+
+        const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
+        const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
+        const trackCount = playlist.trackCount ?? playlist.tracks?.length ?? 0;
+
+        playlistCard.innerHTML = `
+            <div class="library-playlist-cover ${playlist.mood || 'default'}" ${coverStyle}></div>
+            <div class="library-playlist-details">
+                <div class="library-playlist-headline">
+                    <div>
+                        <h4>${playlist.title || 'Untitled Playlist'}</h4>
+                        <p>${moodLabel} • ${trackCount} tracks</p>
+                    </div>
+                    <div class="library-playlist-actions">
+                        <button class="library-play-btn friend-post-play-btn" data-action="play-shared-playlist" data-shared-playlist-id="${playlist.id}">
+                            ▶ Play
+                        </button>
+                        <button class="friend-post-save-btn ${isSaved ? 'saved' : ''}" data-action="save-shared-playlist" data-shared-playlist-id="${playlist.id}">
+                            ${isSaved ? 'Saved' : 'Save'}
+                        </button>
+                    </div>
+                </div>
+                <div class="library-playlist-preview">
+                    ${previewTracks.length
+                        ? previewTracks.map(track => {
+                            const albumArtUrl = track.albumArt || 'https://via.placeholder.com/40x40/4a90e2/ffffff?text=♪';
+                            const durationLabel = track.duration ? this.formatDuration(track.duration) : '';
+                            const trackPosition = playlist.tracks?.findIndex(t => t.id === track.id) ?? -1;
+                            return `
+                                <div class="preview-track" data-action="play-shared-track" data-shared-playlist-id="${playlist.id}" data-track-index="${trackPosition}">
+                                    <img class="preview-track-art" src="${albumArtUrl}" alt="${track.title || 'Unknown'}" />
+                                    <div class="preview-track-text">
+                                        <span class="preview-track-name">${track.title || 'Unknown'}</span>
+                                        <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
+                                    </div>
+                                    <div class="preview-track-meta">
+                                        ${durationLabel ? `<span class="preview-track-duration">${durationLabel}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                        : '<div class="preview-track muted">Track list unavailable</div>'}
+                </div>
+            </div>
+        `;
+
+        const playBtn = playlistCard.querySelector('[data-action="play-shared-playlist"]');
+        const saveBtn = playlistCard.querySelector('[data-action="save-shared-playlist"]');
+
+        if (playBtn) {
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleSharedPlaylistPlay(playlist.id, 0);
+            });
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleSharedPlaylistSave(playlist.id);
+            });
+        }
+
+        playlistCard.querySelectorAll('[data-action="play-shared-track"]').forEach(trackRow => {
+            trackRow.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.closest('[data-action="save-shared-playlist"]')) return;
+                const trackIndex = parseInt(trackRow.getAttribute('data-track-index'), 10);
+                this.handleSharedPlaylistPlay(playlist.id, Number.isNaN(trackIndex) ? 0 : trackIndex);
+            });
+        });
+
+        card.appendChild(playlistCard);
+
+        return card;
+    }
+
+    getSharedPlaylistById(playlistId) {
+        if (!playlistId) return null;
+        const post = this.friendPosts.find(entry => entry?.playlist?.id === playlistId);
+        return post?.playlist || null;
+    }
+
+    handleSharedPlaylistPlay(playlistId, trackIndex = 0) {
+        const playlist = this.getSharedPlaylistById(playlistId);
+        if (!playlist) {
+            this.showError('Playlist unavailable. Please refresh.');
+            return;
+        }
+        this.playLibraryPlaylist(playlist, trackIndex);
+    }
+
+    handleSharedPlaylistSave(playlistId) {
+        const playlist = this.getSharedPlaylistById(playlistId);
+        if (!playlist) {
+            this.showError('Playlist unavailable. Please refresh.');
+            return;
+        }
+        this.togglePlaylistSave(playlist);
+    }
+
+    formatRelativeTime(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return '';
+        const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (diffSeconds < 60) return 'Just now';
+        if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+        if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
+        if (diffSeconds < 604800) return `${Math.floor(diffSeconds / 86400)}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    async loadFriendsPosts(forceReload = false) {
+        if (!this.userContext?.id) {
+            this.friendPosts = [];
+            this.friendPostsLoaded = false;
+            this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
+            return;
+        }
+
+        if (this.friendPostsLoading) {
+            return;
+        }
+
+        if (forceReload) {
+            this.friendPostsLoaded = false;
+        }
+
+        if (this.friendPostsLoaded && !forceReload) {
+            this.renderFriendsPosts();
+            return;
+        }
+
+        this.friendPostsLoading = true;
+        this.renderFriendsPostsLoading();
+
+        try {
+            const response = await fetch(`/api/posts?userId=${this.userContext.id}`);
+            if (!response.ok) {
+                throw new Error('Failed to load friend posts');
+            }
+            const data = await response.json();
+            this.friendPosts = Array.isArray(data.posts) ? data.posts : [];
+            this.friendPostsLoaded = true;
+
+            if (!this.friendPosts.length) {
+                this.renderFriendsPostsEmpty('No posts from friends yet. Encourage them to share a playlist!');
+            } else {
+                this.renderFriendsPosts();
+            }
+        } catch (error) {
+            console.error('Unable to load friends posts:', error);
+            this.renderFriendsPostsEmpty('Unable to load friends posts. Please try again later.');
+        } finally {
+            this.friendPostsLoading = false;
+        }
+    }
+
     createPlaylistCard(playlist, isEmpty = false) {
         const card = document.createElement('div');
         card.className = 'playlist-card';
@@ -599,6 +997,7 @@ class MusicPlayer {
                     </div>` :
                 tracks.slice(0, 4).map(track => {
                     const songSaved = this.savedSongs.has(track.id);
+                    const inUserPlaylist = this.isSongInUserPlaylist(track.id);
                     return `
                         <div class="track" data-track-id="${track.id}">
                             <div class="track-info">
@@ -607,6 +1006,9 @@ class MusicPlayer {
                             </div>
                             <div class="track-actions">
                                 <div class="track-duration">${this.formatDuration(track.duration)}</div>
+                                <button class="playlist-save-btn ${inUserPlaylist ? 'saved' : ''}" data-track-id="${track.id}" title="Save to playlist">
+                                    ${inUserPlaylist ? '✓' : '+'}
+                                </button>
                                 <button class="save-track-btn ${songSaved ? 'saved' : ''}" data-track-id="${track.id}">
                                     ${songSaved ? '♥' : '♡'}
                                 </button>
@@ -654,6 +1056,14 @@ class MusicPlayer {
                         this.playTrack(trackIndex);
                     });
                     trackEl.style.cursor = 'pointer';
+
+                    const playlistSaveBtn = trackEl.querySelector('.playlist-save-btn');
+                    if (playlistSaveBtn) {
+                        playlistSaveBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.handleTrackPlaylistSave(tracks[trackIndex]);
+                        });
+                    }
                 }
             });
         }
@@ -842,10 +1252,19 @@ class MusicPlayer {
     updatePlaylistSaveButtons(playlistId) {
         const isSaved = this.savedPlaylists.has(playlistId);
         const buttons = document.querySelectorAll(`[data-playlist-id="${playlistId}"] .save-playlist-btn`);
+        const standaloneButtons = document.querySelectorAll(`.save-playlist-btn[data-playlist-id="${playlistId}"]`);
+        const friendButtons = document.querySelectorAll(`.friend-post-save-btn[data-shared-playlist-id="${playlistId}"]`);
 
-        buttons.forEach(button => {
+        const combinedButtons = new Set([...buttons, ...standaloneButtons]);
+
+        combinedButtons.forEach(button => {
             button.className = `save-playlist-btn ${isSaved ? 'saved' : ''}`;
             button.textContent = isSaved ? '★ Saved' : '+ Save playlist';
+        });
+
+        friendButtons.forEach(button => {
+            button.classList.toggle('saved', isSaved);
+            button.textContent = isSaved ? 'Saved' : 'Save';
         });
     }
 
@@ -961,7 +1380,348 @@ class MusicPlayer {
         }
     }
 
-    playLibraryPlaylist(playlist) {
+    async handleTrackPlaylistSave(track) {
+        if (!track?.id) return;
+        if (!this.userContext?.id) {
+            this.showError('Sign in to organize songs into playlists.');
+            return;
+        }
+
+        await this.loadLibraryState(true);
+
+        this.openAddToPlaylistModal(track);
+    }
+
+    async ensureSongLiked(track) {
+        if (!track?.id) return;
+        if (this.savedSongs.has(track.id)) return;
+        await this.toggleSongSave(track);
+    }
+
+    ensurePlaylistModalElements() {
+        if (this.playlistModalOverlay && this.playlistModalContent) {
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'playlist-modal-overlay';
+        overlay.innerHTML = '<div class="playlist-modal-window" role="dialog" aria-modal="true"></div>';
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                this.closePlaylistModal();
+            }
+        });
+
+        document.body.appendChild(overlay);
+        this.playlistModalOverlay = overlay;
+        this.playlistModalContent = overlay.querySelector('.playlist-modal-window');
+    }
+
+    openAddToPlaylistModal(track) {
+        this.ensurePlaylistModalElements();
+
+        const hasPlaylists = Array.isArray(this.userPlaylists) && this.userPlaylists.length > 0;
+
+        const initialSelection = hasPlaylists ? this.userPlaylists[0].id : null;
+
+        this.playlistModalState = {
+            track,
+            selectedPlaylistId: initialSelection,
+            lastSelectedPlaylistId: initialSelection,
+            isCreatingPlaylist: !hasPlaylists,
+            newPlaylistName: '',
+            error: '',
+            isSubmitting: false
+        };
+
+        if (!this.boundPlaylistModalKeydown) {
+            this.boundPlaylistModalKeydown = (event) => {
+                if (event.key === 'Escape') {
+                    this.closePlaylistModal();
+                }
+            };
+        }
+
+        document.addEventListener('keydown', this.boundPlaylistModalKeydown);
+        document.body.classList.add('modal-open');
+        this.renderPlaylistModal();
+        this.playlistModalOverlay?.classList.add('visible');
+    }
+
+    updatePlaylistModalState(patch = {}) {
+        if (!this.playlistModalState) return;
+        this.playlistModalState = {
+            ...this.playlistModalState,
+            ...patch
+        };
+        this.renderPlaylistModal();
+    }
+
+    renderPlaylistModal() {
+        if (!this.playlistModalContent || !this.playlistModalState) return;
+
+        const playlists = this.userPlaylists || [];
+        const { track, selectedPlaylistId, isCreatingPlaylist, newPlaylistName, error, isSubmitting } = this.playlistModalState;
+
+        const playlistOptions = playlists.length
+            ? playlists.map(playlist => `
+                <label class="playlist-option">
+                    <input type="radio" name="playlist-choice" value="${playlist.id}" ${selectedPlaylistId === playlist.id ? 'checked' : ''} ${isSubmitting ? 'disabled' : ''}>
+                    <div class="playlist-option-details">
+                        <div class="playlist-option-title">${playlist.title}</div>
+                        <div class="playlist-option-meta">${playlist.trackCount || 0} song${(playlist.trackCount || 0) === 1 ? '' : 's'}</div>
+                    </div>
+                </label>
+            `).join('')
+            : '<div class="playlist-empty-state">Create your first playlist to start saving songs.</div>';
+
+        const createFormVisible = isCreatingPlaylist ? 'visible' : '';
+
+        this.playlistModalContent.innerHTML = `
+            <div class="playlist-modal-header">
+                <div>
+                    <p class="playlist-modal-subtitle">Add to playlist</p>
+                    <h3>${track?.title || 'Selected song'}</h3>
+                    ${track?.artist ? `<p class="playlist-modal-artist">${track.artist}</p>` : ''}
+                </div>
+                <button class="modal-close-btn" aria-label="Close add to playlist dialog">&times;</button>
+            </div>
+            <div class="playlist-modal-body">
+                <div class="playlist-options">
+                    ${playlistOptions}
+                </div>
+                <div class="playlist-create-section">
+                    <button type="button" class="playlist-create-toggle" ${isSubmitting ? 'disabled' : ''}>
+                        ${isCreatingPlaylist ? 'Cancel new playlist' : '+ Create new playlist'}
+                    </button>
+                    <div class="playlist-create-form ${createFormVisible}">
+                        <label for="playlist-name-input">Playlist name</label>
+                        <input id="playlist-name-input" type="text" value="${newPlaylistName || ''}" placeholder="Wellness Mix" ${isSubmitting ? 'disabled' : ''}>
+                        <button type="button" class="playlist-create-submit" ${isSubmitting || !newPlaylistName?.trim() ? 'disabled' : ''}>
+                            Create playlist
+                        </button>
+                    </div>
+                </div>
+                ${error ? `<div class="playlist-modal-error">${error}</div>` : ''}
+            </div>
+            <div class="playlist-modal-footer">
+                <button type="button" class="modal-cancel-btn" ${isSubmitting ? 'disabled' : ''}>Cancel</button>
+                <button type="button" class="modal-confirm-btn" ${!selectedPlaylistId || isSubmitting || isCreatingPlaylist ? 'disabled' : ''}>
+                    ${isSubmitting ? 'Saving...' : 'Add'}
+                </button>
+            </div>
+        `;
+
+        const closeBtn = this.playlistModalContent.querySelector('.modal-close-btn');
+        closeBtn?.addEventListener('click', () => this.closePlaylistModal());
+
+        const cancelBtn = this.playlistModalContent.querySelector('.modal-cancel-btn');
+        cancelBtn?.addEventListener('click', () => this.closePlaylistModal());
+
+        const confirmBtn = this.playlistModalContent.querySelector('.modal-confirm-btn');
+        confirmBtn?.addEventListener('click', () => this.handleAddTrackToPlaylist());
+
+        this.playlistModalContent.querySelectorAll('input[name="playlist-choice"]').forEach(input => {
+            input.addEventListener('change', (event) => {
+                const value = event.target.value;
+                this.updatePlaylistModalState({
+                    selectedPlaylistId: value,
+                    lastSelectedPlaylistId: value,
+                    isCreatingPlaylist: false,
+                    newPlaylistName: '',
+                    error: ''
+                });
+            });
+        });
+
+        const createToggle = this.playlistModalContent.querySelector('.playlist-create-toggle');
+        createToggle?.addEventListener('click', () => {
+            if (!this.playlistModalState) return;
+            const enableCreation = !this.playlistModalState.isCreatingPlaylist;
+            const fallbackSelection = this.playlistModalState.lastSelectedPlaylistId || this.playlistModalState.selectedPlaylistId || this.userPlaylists[0]?.id || null;
+            this.updatePlaylistModalState({
+                isCreatingPlaylist: enableCreation,
+                selectedPlaylistId: enableCreation ? null : fallbackSelection,
+                lastSelectedPlaylistId: enableCreation
+                    ? this.playlistModalState.selectedPlaylistId || this.playlistModalState.lastSelectedPlaylistId || null
+                    : fallbackSelection,
+                newPlaylistName: enableCreation ? this.playlistModalState.newPlaylistName : '',
+                error: ''
+            });
+        });
+
+        const nameInput = this.playlistModalContent.querySelector('#playlist-name-input');
+        nameInput?.addEventListener('input', (event) => {
+            if (!this.playlistModalState) return;
+            this.playlistModalState.newPlaylistName = event.target.value;
+            const submitBtn = this.playlistModalContent.querySelector('.playlist-create-submit');
+            if (submitBtn) {
+                submitBtn.disabled = !event.target.value.trim() || this.playlistModalState.isSubmitting;
+            }
+        });
+
+        const createSubmit = this.playlistModalContent.querySelector('.playlist-create-submit');
+        createSubmit?.addEventListener('click', () => this.handleCreatePlaylistSubmit());
+    }
+
+    closePlaylistModal() {
+        this.playlistModalOverlay?.classList.remove('visible');
+        document.body.classList.remove('modal-open');
+        if (this.boundPlaylistModalKeydown) {
+            document.removeEventListener('keydown', this.boundPlaylistModalKeydown);
+        }
+        this.playlistModalState = null;
+    }
+
+    async handleCreatePlaylistSubmit() {
+        const state = this.playlistModalState;
+        if (!state) return;
+
+        const name = state.newPlaylistName?.trim();
+        if (!name) {
+            this.updatePlaylistModalState({ error: 'Please enter a playlist name.' });
+            return;
+        }
+
+        this.updatePlaylistModalState({ isSubmitting: true, error: '' });
+
+        try {
+            const response = await fetch('/api/playlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: name,
+                    description: '',
+                    mood: 'user_created',
+                    createdBy: this.userContext.id,
+                    tracks: []
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(await this.extractErrorMessage(response));
+            }
+
+            const payload = await response.json();
+            const playlist = this.normalizeUserPlaylist(payload.playlist);
+            if (playlist) {
+                this.userPlaylists = [playlist, ...this.userPlaylists];
+                this.rebuildUserPlaylistSongIndex();
+                this.refreshPlaylistSaveIndicators();
+                this.updatePlaylistModalState({
+                    isSubmitting: false,
+                    isCreatingPlaylist: false,
+                    selectedPlaylistId: playlist.id,
+                    lastSelectedPlaylistId: playlist.id,
+                    newPlaylistName: '',
+                    error: ''
+                });
+
+                window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                    detail: {
+                        entityType: 'playlist',
+                        entityId: playlist.id,
+                        source: 'player',
+                        reason: 'user-playlist-created'
+                    }
+                }));
+            } else {
+                throw new Error('Playlist could not be created');
+            }
+        } catch (error) {
+            console.error('Unable to create playlist:', error);
+            this.updatePlaylistModalState({
+                isSubmitting: false,
+                error: error.message || 'Unable to create playlist.'
+            });
+        }
+    }
+
+    async handleAddTrackToPlaylist() {
+        const state = this.playlistModalState;
+        if (!state?.selectedPlaylistId || !state.track?.id) return;
+
+        this.updatePlaylistModalState({ isSubmitting: true, error: '' });
+
+        try {
+            const trackPayload = state.track ? {
+                id: state.track.id,
+                title: state.track.title,
+                artist: state.track.artist,
+                duration: state.track.duration,
+                audioUrl: state.track.audioUrl,
+                albumArt: state.track.albumArt,
+                jamendoId: state.track.jamendoId
+            } : null;
+
+            const response = await fetch('/api/playlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'addSong',
+                    playlistId: state.selectedPlaylistId,
+                    songId: state.track.id,
+                    userId: this.userContext.id,
+                    track: trackPayload
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(await this.extractErrorMessage(response));
+            }
+
+            const payload = await response.json();
+            const updatedPlaylist = this.normalizeUserPlaylist(payload.playlist);
+
+            if (updatedPlaylist) {
+                let found = false;
+                this.userPlaylists = this.userPlaylists.map(playlist => {
+                    if (playlist.id === updatedPlaylist.id) {
+                        found = true;
+                        return updatedPlaylist;
+                    }
+                    return playlist;
+                });
+                if (!found) {
+                    this.userPlaylists = [updatedPlaylist, ...this.userPlaylists];
+                }
+
+                this.rebuildUserPlaylistSongIndex();
+                this.refreshPlaylistSaveIndicators();
+                this.updatePlaylistSaveButtons(state.track.id);
+
+                await this.ensureSongLiked(state.track);
+
+                window.dispatchEvent(new CustomEvent('musicare:library-changed', {
+                    detail: {
+                        entityType: 'playlist',
+                        entityId: updatedPlaylist.id,
+                        source: 'player',
+                        reason: 'user-playlist-updated'
+                    }
+                }));
+            }
+
+            this.closePlaylistModal();
+        } catch (error) {
+            console.error('Unable to add track to playlist:', error);
+            this.updatePlaylistModalState({
+                isSubmitting: false,
+                error: error.message || 'Unable to add song to playlist.'
+            });
+        }
+    }
+
+    async extractErrorMessage(response) {
+        try {
+            const data = await response.json();
+            return data?.error || data?.details || response.statusText || 'Request failed.';
+        } catch {
+            return response.statusText || 'Request failed.';
+        }
+    }
+
+    playLibraryPlaylist(playlist, startIndex = 0) {
         if (!playlist?.tracks?.length) {
             this.showError('This playlist has no playable tracks yet.');
             return;
@@ -977,7 +1737,8 @@ class MusicPlayer {
         };
 
         this.selectPlaylist(normalized);
-        this.playTrack(0);
+        const safeIndex = Math.min(Math.max(0, startIndex || 0), normalized.tracks.length - 1);
+        this.playTrack(safeIndex);
     }
 
     playLibrarySong(song) {
@@ -988,7 +1749,7 @@ class MusicPlayer {
 
         const singlePlaylist = {
             id: `library-song-${song.id}`,
-            title: song.title || 'Saved Song',
+            title: song.title || 'Liked Song',
             description: song.artist || '',
             mood: 'wellness',
             coverImage: song.albumArt,
