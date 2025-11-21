@@ -33,6 +33,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../config/firebase.js';
 import '../features/friends/index.js'; // Import friend system
+import '../features/messages/index.js'; // Import messaging system
 import LibraryView from '../features/music/library.js';
 
 /**

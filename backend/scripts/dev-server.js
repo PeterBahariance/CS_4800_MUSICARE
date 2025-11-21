@@ -106,6 +106,17 @@ app.all('/api/library', async (req, res) => {
   }
 });
 
+// Import and use the messages API handler
+import messagesHandler from '../express-handlers/messages.js';
+app.all('/api/messages', async (req, res) => {
+  try {
+    await messagesHandler(req, res);
+  } catch (error) {
+    console.error('Messages API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Import and use the posts API handler
 import postsHandler from '../express-handlers/posts.js';
 app.all('/api/posts', async (req, res) => {

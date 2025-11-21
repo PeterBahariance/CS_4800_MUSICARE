@@ -793,8 +793,21 @@ class FriendSystem {
     }
 
     async messageFriend(friendId) {
-        // Placeholder for messaging functionality
-        this.showMessage('Messaging feature coming soon!', 'info');
+        console.log('👥 FriendSystem: Opening messages for friend:', friendId);
+
+        // Switch to messages tab
+        const messagesTab = document.querySelector('[data-tab="messages"]');
+        if (messagesTab) {
+            messagesTab.click();
+        }
+
+        // Wait a bit for the tab to switch and messaging system to be ready
+        setTimeout(() => {
+            // Select the friend in messaging system
+            if (window.messagingSystem) {
+                window.messagingSystem.selectFriend(friendId);
+            }
+        }, 100);
     }
 
     /**
