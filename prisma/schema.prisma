@@ -47,13 +47,10 @@ model User {
   createdPlaylists       Playlist[]
   savedPlaylists         UserSavedPlaylist[]
   savedSongs             UserSavedSong[]
-<<<<<<< HEAD
   chatParticipants       ChatParticipant[]
   messages               Message[]
   lastMessageChats       Chat[]              @relation("LastMessageSender")
-=======
   playlistPosts          PlaylistPost[]
->>>>>>> origin/main
 
   @@map("users")
 }
