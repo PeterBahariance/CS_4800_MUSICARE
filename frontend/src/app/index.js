@@ -134,6 +134,11 @@ let currentTab = 'home';
  * @type {LibraryView|null} libraryView - Instance of the music library view
  */
 let libraryView = null;
+let friendsFeedContainers = [];
+let friendsFeedTemplate = null;
+
+// Expose containers globally so other modules (like the player) can re-render into new clones
+window.musicareFriendsFeedContainers = friendsFeedContainers;
 
 /**
  * Show Tab Function
@@ -171,13 +176,33 @@ function showTab(tabId) {
 
     if (!contentSection) {
         // If content section doesn't exist, try to get it from the templates
-        const template = document.querySelector(`.content-templates #${tabId}-content`);
+        let template = null;
+        if (tabId === 'friends-feed') {
+            if (!friendsFeedTemplate) {
+                friendsFeedTemplate = document.querySelector('.friends-feed-template');
+            }
+            template = friendsFeedTemplate;
+        } else {
+            template = document.querySelector(`.content-templates #${tabId}-content`);
+        }
+
         if (template) {
             contentSection = template.cloneNode(true);
             contentSection.id = `${tabId}-content`;
             contentSection.className = 'content-section';
 
             mainContent.appendChild(contentSection);
+
+            if (tabId === 'friends-feed') {
+                const panel = contentSection.querySelector('.friends-posts-feed');
+                if (panel) {
+                    friendsFeedContainers.push(panel);
+                    window.musicareFriendsFeedContainers = friendsFeedContainers;
+                    window.dispatchEvent(new CustomEvent('musicare:friends-feed-cloned', {
+                        detail: { containers: friendsFeedContainers }
+                    }));
+                }
+            }
         }
     }
 

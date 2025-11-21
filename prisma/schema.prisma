@@ -47,9 +47,13 @@ model User {
   createdPlaylists       Playlist[]
   savedPlaylists         UserSavedPlaylist[]
   savedSongs             UserSavedSong[]
+<<<<<<< HEAD
   chatParticipants       ChatParticipant[]
   messages               Message[]
   lastMessageChats       Chat[]              @relation("LastMessageSender")
+=======
+  playlistPosts          PlaylistPost[]
+>>>>>>> origin/main
 
   @@map("users")
 }
@@ -97,6 +101,7 @@ model Playlist {
   playlistSongs PlaylistSong[]
   creator       User?               @relation(fields: [createdBy], references: [id])
   savedBy       UserSavedPlaylist[]
+  posts         PlaylistPost[]
 
   @@map("playlists")
 }
@@ -154,6 +159,54 @@ model UserSavedSong {
 
   @@unique([userId, songId])
   @@map("user_saved_songs")
+}
+
+model PlaylistPost {
+  id         String   @id @default(uuid())
+  playlistId String   @map("playlist_id")
+  authorId   String   @map("author_id")
+  caption    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([playlistId])
+  @@index([authorId])
+  @@map("playlist_posts")
+}
+
+model Chat {
+  id                  String   @id
+  createdAt           DateTime @map("created_at")
+  lastMessage         String?  @map("lastMessage")
+  lastMessageAt       DateTime? @map("last_message_at")
+  lastMessageSenderId String?  @map("last_message_sender_id")
+  updatedAt           DateTime @map("updated_at")
+
+  @@map("chats")
+  @@ignore
+}
+
+model ChatParticipant {
+  id      String   @id
+  chatId  String   @map("chat_id")
+  joinedAt DateTime @map("joined_at")
+  userId  String   @map("user_id")
+
+  @@map("chat_participants")
+  @@ignore
+}
+
+model Message {
+  id       String   @id
+  chatId   String   @map("chat_id")
+  createdAt DateTime @map("created_at")
+  read     Boolean
+  senderId String   @map("sender_id")
+  text     String
+
+  @@map("messages")
+  @@ignore
 }
 
 enum FriendRequestStatus {
