@@ -47,6 +47,9 @@ model User {
   createdPlaylists       Playlist[]
   savedPlaylists         UserSavedPlaylist[]
   savedSongs             UserSavedSong[]
+  chatParticipants       ChatParticipant[]
+  messages               Message[]
+  lastMessageChats       Chat[]              @relation("LastMessageSender")
 
   @@map("users")
 }

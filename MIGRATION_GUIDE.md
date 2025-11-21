@@ -35,8 +35,8 @@ sudo apt-get install postgresql-client
 #### Step 2: Export Current Database
 
 ```bash
-# Export to SQL file (replace with your actual DATABASE_URL from .env.local)
-pg_dump "$DATABASE_URL" > musicare_backup.sql
+# Export to SQL file
+pg_dump "postgres://00b20222831925f6dbc86fb8b928e9fb4a5bac747ecfa862b9def0e0b59724f0:sk_MjgH9v7oWJD1UbnItI9J-@db.prisma.io:5432/postgres?sslmode=require" > musicare_backup.sql
 
 # Verify the backup
 ls -lh musicare_backup.sql
@@ -111,7 +111,6 @@ npx prisma studio
 
 ```bash
 # Add both database URLs
-OLD_DATABASE_URL="your-old-database-url-here"
 NEW_DATABASE_URL="your-new-database-url-here"
 DATABASE_URL="${NEW_DATABASE_URL}"
 ```
