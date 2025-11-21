@@ -187,15 +187,8 @@ async function getPlaylists(req, res) {
      * that the frontend can easily consume. Flattens nested relationships
      * and calculates derived fields like track count.
      */
-    const formattedPlaylists = playlists.map(playlist => ({
-      id: playlist.id,
-      title: playlist.title,
-      description: playlist.description,
-      mood: playlist.mood,
-      verified: playlist.verified,
-      coverImage: playlist.coverImage,
-      createdBy: playlist.creator,
-      tracks: playlist.playlistSongs.map(ps => ({
+    const formattedPlaylists = playlists.map(playlist => {
+      const tracks = playlist.playlistSongs.map(ps => ({
         id: ps.song.id,
         title: ps.song.title,
         artist: ps.song.artist,
@@ -203,10 +196,27 @@ async function getPlaylists(req, res) {
         audioUrl: ps.song.audioUrl,
         albumArt: ps.song.albumArt,
         position: ps.position
-      })),
-      trackCount: playlist.playlistSongs.length,
-      createdAt: playlist.createdAt
-    }));
+      }));
+
+      // Use first track's album art if playlist cover is a placeholder
+      let coverImage = playlist.coverImage;
+      if (!coverImage || coverImage.includes('placeholder.com')) {
+        coverImage = tracks[0]?.albumArt || playlist.coverImage || generatePlaylistCoverUrl(playlist.mood);
+      }
+
+      return {
+        id: playlist.id,
+        title: playlist.title,
+        description: playlist.description,
+        mood: playlist.mood,
+        verified: playlist.verified,
+        coverImage: coverImage,
+        createdBy: playlist.creator,
+        tracks: tracks,
+        trackCount: tracks.length,
+        createdAt: playlist.createdAt
+      };
+    });
 
     console.log('✅ Playlists API: Playlists formatted successfully');
 
@@ -1241,27 +1251,32 @@ async function handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw) {
 
     // Transform playlists for frontend
     const timestamp = Date.now();
-    const formattedPlaylists = playlists.map((playlist, index) => ({
-      id: `${categoryType}-${categoryKey}-${timestamp}-${index}`,
-      title: playlist.title,
-      description: playlist.description,
-      mood: playlist.mood,
-      category: playlist.category,
-      categoryKey: playlist.categoryKey,
-      verified: false,
-      coverImage: generatePlaylistCoverUrl(playlist.mood),
-      tracks: playlist.tracks.map((track, index) => ({
-        id: track.jamendoId,
-        title: track.title,
-        artist: track.artist,
-        duration: track.duration,
-        audioUrl: track.audioUrl,
-        albumArt: track.albumArt,
-        position: index
-      })),
-      trackCount: playlist.tracks.length,
-      createdAt: new Date().toISOString()
-    }));
+    const formattedPlaylists = playlists.map((playlist, index) => {
+      // Use first track's album art as playlist cover, fallback to placeholder
+      const coverImage = playlist.tracks?.[0]?.albumArt || generatePlaylistCoverUrl(playlist.mood);
+      
+      return {
+        id: `${categoryType}-${categoryKey}-${timestamp}-${index}`,
+        title: playlist.title,
+        description: playlist.description,
+        mood: playlist.mood,
+        category: playlist.category,
+        categoryKey: playlist.categoryKey,
+        verified: false,
+        coverImage: coverImage,
+        tracks: playlist.tracks.map((track, index) => ({
+          id: track.jamendoId,
+          title: track.title,
+          artist: track.artist,
+          duration: track.duration,
+          audioUrl: track.audioUrl,
+          albumArt: track.albumArt,
+          position: index
+        })),
+        trackCount: playlist.tracks.length,
+        createdAt: new Date().toISOString()
+      };
+    });
 
     return res.status(200).json({
       playlists: formattedPlaylists,

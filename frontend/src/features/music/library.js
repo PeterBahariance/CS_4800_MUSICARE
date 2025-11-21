@@ -28,6 +28,8 @@
  * // libraryView.setUserContext(user);
  */
 
+const MAX_POST_CAPTION_LENGTH = 280;
+
 /**
  * Library View Class
  *
@@ -104,6 +106,13 @@ class LibraryView {
          * @type {Set<string>}
          */
         this.expandedPlaylists = new Set();
+
+        /**
+         * Playlist sharing modal elements/state
+         */
+        this.postModalElements = null;
+        this.currentPostPlaylist = null;
+        this.isPostingPlaylist = false;
 
         /**
          * Listen for library changes from other components
@@ -462,6 +471,10 @@ class LibraryView {
             }
 
             const playlist = entry.playlist;
+            const playlistOwnerId = playlist.ownerId || playlist.createdBy;
+            const hasPost = Array.isArray(window.musicPlayer?.userPlaylistPosts)
+            ? window.musicPlayer.userPlaylistPosts.some(post => post.playlistId === playlist.id)
+            : false;
             const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
             const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
             const moodClass = playlist.mood || 'default';
@@ -471,6 +484,7 @@ class LibraryView {
             const tracks = playlist.tracks || [];
             const tracksToShow = isExpanded ? tracks : tracks.slice(0, 3);
             const hasMoreTracks = tracks.length > tracksToShow.length;
+            const canPostPlaylist = !this.readOnly && this.user?.id && this.user.id === playlistOwnerId;
 
             return `
                 <div class="library-playlist-card" data-playlist-id="${playlist.id}">
@@ -485,6 +499,11 @@ class LibraryView {
                                 <button class="library-play-btn" data-action="play-playlist" data-playlist-id="${playlist.id}">
                                     ▶ Play
                                 </button>
+                                ${canPostPlaylist ? `
+                                    <button class="library-post-btn ${hasPost ? 'posted' : ''}" data-action="${hasPost ? 'delete-post' : 'open-post-modal'}" data-playlist-id="${playlist.id}">
+                                        ${hasPost ? 'Delete Post' : 'Post'}
+                                    </button>
+                                ` : ''}
                                 ${!this.readOnly ? `
                                     <button class="library-remove-btn" data-action="delete-user-playlist" data-playlist-id="${playlist.id}">
                                         ✕
@@ -496,21 +515,28 @@ class LibraryView {
                             ${tracksToShow.length
                                 ? tracksToShow.map(track => {
                                     const originalIndex = (playlist.tracks || []).findIndex(t => t.id === track.id);
+                                    const albumArtUrl = track.albumArt || 'https://via.placeholder.com/40x40/4a90e2/ffffff?text=♪';
                                     return `
                                         <div class="preview-track ${isExpanded ? 'expanded' : ''}" 
                                              data-action="play-owned-track"
                                              data-playlist-id="${playlist.id}" 
                                              data-song-id="${track.id || ''}"
                                              data-track-index="${originalIndex}">
+                                            <img class="preview-track-art" src="${albumArtUrl}" alt="${track.title || 'Unknown'}" />
                                             <div class="preview-track-text">
                                                 <span class="preview-track-name">${track.title || 'Unknown'}</span>
                                                 <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
-                                                ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
                                             </div>
-                                            ${!this.readOnly && track.id ? `
-                                                <button class="library-remove-btn track-remove-btn" data-action="remove-user-playlist-track" data-playlist-id="${playlist.id}" data-song-id="${track.id}">
-                                                    ✕
-                                                </button>` : ''}
+                                            <div class="preview-track-meta">
+                                                ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
+                                                <button class="library-play-btn" data-action="play-owned-track-btn" data-playlist-id="${playlist.id}" data-track-index="${originalIndex}">
+                                                    ▶
+                                                </button>
+                                                ${!this.readOnly && track.id ? `
+                                                    <button class="library-remove-btn track-remove-btn" data-action="remove-user-playlist-track" data-playlist-id="${playlist.id}" data-song-id="${track.id}">
+                                                        ✕
+                                                    </button>` : ''}
+                                            </div>
                                         </div>
                                     `;
                                 }).join('')
@@ -593,16 +619,23 @@ class LibraryView {
                             ${tracksToShow.length
                                 ? tracksToShow.map(track => {
                                     const originalIndex = (playlist.tracks || []).findIndex(t => t.id === track.id);
+                                    const albumArtUrl = track.albumArt || 'https://via.placeholder.com/40x40/4a90e2/ffffff?text=♪';
                                     return `
                                         <div class="preview-track ${isExpanded ? 'expanded' : ''}"
                                              data-action="play-saved-track"
                                              data-playlist-id="${playlist.id}"
                                              data-song-id="${track.id || ''}"
                                              data-track-index="${originalIndex}">
+                                            <img class="preview-track-art" src="${albumArtUrl}" alt="${track.title || 'Unknown'}" />
                                             <div class="preview-track-text">
                                                 <span class="preview-track-name">${track.title || 'Unknown'}</span>
                                                 <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
+                                            </div>
+                                            <div class="preview-track-meta">
                                                 ${track.duration ? `<span class="preview-track-duration">${formatDuration(track.duration)}</span>` : ''}
+                                                <button class="library-play-btn" data-action="play-saved-track-btn" data-playlist-id="${playlist.id}" data-track-index="${originalIndex}">
+                                                    ▶
+                                                </button>
                                             </div>
                                         </div>
                                     `;
@@ -649,25 +682,29 @@ class LibraryView {
 
         return `
             <div class="library-song-list">
-                ${this.state.songs.map(entry => `
-                    <div class="library-song-row" data-action="play-liked-track" data-song-id="${entry.song.id}">
-                        <div class="song-main">
-                            <div class="song-title">${entry.song.title}</div>
-                            <div class="song-artist">${entry.song.artist}</div>
-                        </div>
-                        <div class="song-meta">
-                            <span>${formatDuration(entry.song.duration)}</span>
-                            <button class="library-play-btn" data-action="play-song" data-song-id="${entry.song.id}">
-                                ▶
-                            </button>
-                            ${!this.readOnly ? `
-                                <button class="library-remove-btn" data-action="remove-song" data-song-id="${entry.song.id}">
-                                    ✕
+                ${this.state.songs.map(entry => {
+                    const albumArtUrl = entry.song.albumArt || 'https://via.placeholder.com/60x60/4a90e2/ffffff?text=♪';
+                    return `
+                        <div class="library-song-row" data-action="play-liked-track" data-song-id="${entry.song.id}">
+                            <img class="song-album-art" src="${albumArtUrl}" alt="${entry.song.title}" />
+                            <div class="song-main">
+                                <div class="song-title">${entry.song.title}</div>
+                                <div class="song-artist">${entry.song.artist}</div>
+                            </div>
+                            <div class="song-meta">
+                                <span>${formatDuration(entry.song.duration)}</span>
+                                <button class="library-play-btn" data-action="play-song" data-song-id="${entry.song.id}">
+                                    ▶
                                 </button>
-                            ` : ''}
+                                ${!this.readOnly ? `
+                                    <button class="library-remove-btn" data-action="remove-song" data-song-id="${entry.song.id}">
+                                        ✕
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
     }
@@ -725,6 +762,30 @@ class LibraryView {
             });
         });
 
+        // Open share/post modal for owned playlists
+        if (!this.readOnly) {
+            this.root.querySelectorAll('[data-action="open-post-modal"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const playlistId = btn.getAttribute('data-playlist-id');
+                    const entry = this.state.myPlaylists.find(item => item?.playlist?.id === playlistId);
+                    if (!entry?.playlist) {
+                        this.showToast('Playlist unavailable.');
+                        return;
+                    }
+                    this.openPostModal(entry.playlist);
+                });
+            });
+
+            this.root.querySelectorAll('[data-action="delete-post"]').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const playlistId = btn.getAttribute('data-playlist-id');
+                    await this.deletePlaylistPost(playlistId);
+                });
+            });
+        }
+
         // Remove track from user playlist buttons
         this.root.querySelectorAll('[data-action="remove-user-playlist-track"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -735,11 +796,12 @@ class LibraryView {
             });
         });
 
-        // Play owned playlist track
+        // Play owned playlist track (clicking on track row)
         this.root.querySelectorAll('[data-action="play-owned-track"]').forEach(trackEl => {
             trackEl.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('[data-action="remove-user-playlist-track"]');
-                if (removeBtn) return;
+                const playBtn = e.target.closest('[data-action="play-owned-track-btn"]');
+                if (removeBtn || playBtn) return;
 
                 const playlistId = trackEl.getAttribute('data-playlist-id');
                 const songId = trackEl.getAttribute('data-song-id');
@@ -748,12 +810,39 @@ class LibraryView {
             });
         });
 
-        // Play saved playlist track
+        // Play owned playlist track button
+        this.root.querySelectorAll('[data-action="play-owned-track-btn"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const playlistId = btn.getAttribute('data-playlist-id');
+                const trackIndex = parseInt(btn.getAttribute('data-track-index'), 10);
+                const trackRow = btn.closest('[data-action="play-owned-track"]');
+                const songId = trackRow ? trackRow.getAttribute('data-song-id') : null;
+                this.playOwnedPlaylistTrack(playlistId, songId, Number.isNaN(trackIndex) ? null : trackIndex);
+            });
+        });
+
+        // Play saved playlist track (clicking on track row)
         this.root.querySelectorAll('[data-action="play-saved-track"]').forEach(trackEl => {
-            trackEl.addEventListener('click', () => {
+            trackEl.addEventListener('click', (e) => {
+                const playBtn = e.target.closest('[data-action="play-saved-track-btn"]');
+                if (playBtn) return;
+
                 const playlistId = trackEl.getAttribute('data-playlist-id');
                 const songId = trackEl.getAttribute('data-song-id');
                 const trackIndex = parseInt(trackEl.getAttribute('data-track-index'), 10);
+                this.playSavedPlaylistTrack(playlistId, songId, Number.isNaN(trackIndex) ? null : trackIndex);
+            });
+        });
+
+        // Play saved playlist track button
+        this.root.querySelectorAll('[data-action="play-saved-track-btn"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const playlistId = btn.getAttribute('data-playlist-id');
+                const trackIndex = parseInt(btn.getAttribute('data-track-index'), 10);
+                const trackRow = btn.closest('[data-action="play-saved-track"]');
+                const songId = trackRow ? trackRow.getAttribute('data-song-id') : null;
                 this.playSavedPlaylistTrack(playlistId, songId, Number.isNaN(trackIndex) ? null : trackIndex);
             });
         });
@@ -1099,6 +1188,227 @@ class LibraryView {
         } catch (error) {
             console.error('LibraryView: unable to delete user playlist', error);
             this.showToast('Unable to delete playlist. Please try again.');
+        }
+    }
+
+    /**
+     * Ensure Playlist Post Modal Exists
+     *
+     * @returns {Object} modal elements cache
+     */
+    ensurePostModalElements() {
+        if (this.postModalElements) return this.postModalElements;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'playlist-post-overlay';
+        overlay.style.display = 'none';
+        overlay.innerHTML = `
+            <div class="playlist-post-window">
+                <button class="playlist-post-close" type="button" data-post-close>&times;</button>
+                <div class="playlist-post-header">
+                    <div class="playlist-post-cover" data-post-cover></div>
+                    <div>
+                        <h3 data-post-title>Share Playlist</h3>
+                        <p data-post-meta></p>
+                    </div>
+                </div>
+                <label class="playlist-post-label" for="playlist-post-caption">Add a caption (optional)</label>
+                <textarea id="playlist-post-caption" data-post-caption maxlength="${MAX_POST_CAPTION_LENGTH}" placeholder="Share why this playlist fits the vibe..."></textarea>
+                <div class="playlist-post-footer">
+                    <span class="playlist-post-counter" data-post-counter>0 / ${MAX_POST_CAPTION_LENGTH}</span>
+                    <div class="playlist-post-actions">
+                        <button class="playlist-post-cancel" type="button" data-post-close>Cancel</button>
+                        <button class="playlist-post-submit" type="button" data-post-submit data-default-label="Share playlist">Share playlist</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const elements = {
+            overlay,
+            title: overlay.querySelector('[data-post-title]'),
+            meta: overlay.querySelector('[data-post-meta]'),
+            cover: overlay.querySelector('[data-post-cover]'),
+            caption: overlay.querySelector('[data-post-caption]'),
+            counter: overlay.querySelector('[data-post-counter]'),
+            submit: overlay.querySelector('[data-post-submit]')
+        };
+
+        overlay.querySelectorAll('[data-post-close]').forEach(btn => {
+            btn.addEventListener('click', () => this.closePostModal());
+        });
+
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                this.closePostModal();
+            }
+        });
+
+        elements.caption.addEventListener('input', () => this.updatePostCaptionCounter());
+        elements.submit.addEventListener('click', () => this.handlePostSubmit());
+
+        this.postModalElements = elements;
+        return elements;
+    }
+
+    /**
+     * Open playlist sharing modal
+     *
+     * @param {Object} playlist
+     */
+    openPostModal(playlist) {
+        if (this.readOnly || !this.user?.id) {
+            this.showToast('Sign in to share playlists.');
+            return;
+        }
+
+        if (!playlist) {
+            this.showToast('Playlist unavailable.');
+            return;
+        }
+
+        const elements = this.ensurePostModalElements();
+        this.currentPostPlaylist = playlist;
+
+        elements.title.textContent = playlist.title || 'Untitled Playlist';
+        const moodLabel = formatMoodLabel(playlist.mood || 'wellness');
+        const trackCount = playlist.trackCount ?? playlist.tracks?.length ?? 0;
+        elements.meta.textContent = `${trackCount} track${trackCount === 1 ? '' : 's'} • ${moodLabel}`;
+
+        if (playlist.coverImage) {
+            const encoded = encodeURI(playlist.coverImage);
+            elements.cover.style.backgroundImage = `url('${encoded}')`;
+            elements.cover.classList.add('has-image');
+        } else {
+            elements.cover.style.backgroundImage = '';
+            elements.cover.classList.remove('has-image');
+        }
+
+        elements.caption.value = '';
+        this.updatePostCaptionCounter();
+        elements.submit.disabled = false;
+        elements.submit.textContent = elements.submit.dataset.defaultLabel || 'Share playlist';
+
+        elements.overlay.style.display = 'flex';
+        requestAnimationFrame(() => {
+            elements.overlay.classList.add('active');
+        });
+
+        setTimeout(() => elements.caption.focus(), 50);
+    }
+
+    /**
+     * Close playlist post modal
+     */
+    closePostModal() {
+        if (!this.postModalElements) return;
+        this.postModalElements.overlay.classList.remove('active');
+        this.postModalElements.overlay.style.display = 'none';
+        this.currentPostPlaylist = null;
+        this.isPostingPlaylist = false;
+        this.postModalElements.submit.disabled = false;
+        this.postModalElements.submit.textContent = this.postModalElements.submit.dataset.defaultLabel || 'Share playlist';
+    }
+
+    /**
+     * Update caption character counter
+     */
+    updatePostCaptionCounter() {
+        if (!this.postModalElements) return;
+        const value = this.postModalElements.caption.value || '';
+        this.postModalElements.counter.textContent = `${value.length} / ${MAX_POST_CAPTION_LENGTH}`;
+    }
+
+    /**
+     * Submit playlist post to API
+     */
+    async handlePostSubmit() {
+        if (this.isPostingPlaylist) return;
+        if (!this.currentPostPlaylist || !this.user?.id) {
+            this.showToast('Unable to share playlist right now.');
+            return;
+        }
+
+        const elements = this.ensurePostModalElements();
+        const caption = elements.caption.value.trim();
+
+        try {
+            this.isPostingPlaylist = true;
+            elements.submit.disabled = true;
+            elements.submit.textContent = 'Sharing...';
+
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: this.user.id,
+                    playlistId: this.currentPostPlaylist.id,
+                    caption
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || 'Failed to share playlist.');
+            }
+
+            const sharedPlaylistId = this.currentPostPlaylist.id;
+            this.showToast('Playlist shared with friends!');
+            this.closePostModal();
+
+            window.dispatchEvent(new CustomEvent('musicare:friends-feed-updated', {
+                detail: {
+                    source: 'library',
+                    playlistId: sharedPlaylistId
+                }
+            }));
+
+            if (!window.musicPlayer) return;
+            await window.musicPlayer.loadFriendsPosts(true);
+            await window.musicPlayer.loadLibraryState(true);
+            this.loadLibrary();
+        } catch (error) {
+            console.error('LibraryView: unable to share playlist', error);
+            this.showToast(error.message || 'Unable to share playlist.');
+            this.isPostingPlaylist = false;
+            elements.submit.disabled = false;
+            elements.submit.textContent = elements.submit.dataset.defaultLabel || 'Share playlist';
+        }
+    }
+
+    async deletePlaylistPost(playlistId) {
+        if (!this.user?.id) return;
+
+        try {
+            const response = await fetch('/api/posts', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: this.user.id, playlistId })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || 'Failed to delete post.');
+            }
+
+            this.showToast('Playlist post removed.');
+
+            window.dispatchEvent(new CustomEvent('musicare:friends-feed-updated', {
+                detail: {
+                    source: 'library',
+                    playlistId
+                }
+            }));
+
+            if (window.musicPlayer) {
+                await window.musicPlayer.loadFriendsPosts(true);
+                await window.musicPlayer.loadLibraryState(true);
+            }
+            this.loadLibrary();
+        } catch (error) {
+            console.error('LibraryView: unable to delete playlist post', error);
+            this.showToast(error.message || 'Unable to delete post.');
         }
     }
 

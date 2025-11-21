@@ -130,10 +130,11 @@ async function handleGetLibrary(req, res) {
     }
 
     try {
-        const [savedPlaylists, savedSongs, userPlaylists] = await Promise.all([
+        const [savedPlaylists, savedSongs, userPlaylists, userPosts] = await Promise.all([
             fetchSavedPlaylists(userId),
             fetchSavedSongs(userId),
-            fetchUserPlaylists(userId)
+            fetchUserPlaylists(userId),
+            fetchUserPlaylistPosts(userId)
         ]);
 
         return res.status(200).json({
@@ -153,6 +154,12 @@ async function handleGetLibrary(req, res) {
                 createdAt: playlist.createdAt,
                 updatedAt: playlist.updatedAt,
                 playlist: formatPlaylist(playlist)
+            })),
+            userPlaylistPosts: userPosts.map(post => ({
+                id: post.id,
+                playlistId: post.playlistId,
+                caption: post.caption,
+                createdAt: post.createdAt
             }))
         });
     } catch (error) {
@@ -345,6 +352,13 @@ async function fetchUserPlaylists(userId) {
     });
 }
 
+async function fetchUserPlaylistPosts(userId) {
+    return await prisma.playlistPost.findMany({
+        where: { authorId: userId },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
 /**
  * Save Playlist to Library
  *
@@ -503,12 +517,19 @@ function formatPlaylist(playlist) {
 
     const sortedSongs = [...(playlist.playlistSongs || [])].sort((a, b) => a.position - b.position);
 
+    // Use first track's album art if playlist cover is a placeholder
+    let coverImage = playlist.coverImage;
+    if (!coverImage || coverImage.includes('placeholder.com')) {
+        const firstSong = sortedSongs[0]?.song;
+        coverImage = firstSong?.albumArt || playlist.coverImage;
+    }
+
     return {
         id: playlist.id,
         title: playlist.title,
         description: playlist.description,
         mood: playlist.mood,
-        coverImage: playlist.coverImage,
+        coverImage: coverImage,
         verified: playlist.verified,
         ownerId: playlist.createdBy || null,
         creator: playlist.creator ? {

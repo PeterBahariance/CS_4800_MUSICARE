@@ -106,6 +106,17 @@ app.all('/api/library', async (req, res) => {
   }
 });
 
+// Import and use the posts API handler
+import postsHandler from '../express-handlers/posts.js';
+app.all('/api/posts', async (req, res) => {
+  try {
+    await postsHandler(req, res);
+  } catch (error) {
+    console.error('Posts API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all route for serving index.html
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {

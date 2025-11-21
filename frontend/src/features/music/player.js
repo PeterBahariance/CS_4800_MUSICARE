@@ -223,6 +223,23 @@ class MusicPlayer {
          */
         this.libraryLoaded = false;
 
+        /**
+         * Friends feed state
+         */
+        this.friendPosts = [];
+        this.friendPostsLoaded = false;
+        this.friendPostsLoading = false;
+
+        // Listen for when a new friends-feed page is cloned
+        window.addEventListener('musicare:friends-feed-cloned', () => {
+            // Re-render friends posts to all containers (including the newly cloned one)
+            if (this.friendPostsLoaded && this.friendPosts.length > 0) {
+                this.renderFriendsPosts();
+            } else if (!this.friendPostsLoading) {
+                this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
+            }
+        });
+
         this.init();
     }
 
@@ -272,6 +289,12 @@ class MusicPlayer {
                 this.playLibrarySong(song);
             }
         });
+
+        window.addEventListener('musicare:friends-feed-updated', () => {
+            if (this.userContext?.id) {
+                this.loadFriendsPosts(true);
+            }
+        });
     }
 
     bootstrap() {
@@ -281,6 +304,7 @@ class MusicPlayer {
             this.renderEmptyState('Sign in to unlock personalized playlists tailored for you.');
             this.updateStatus('Sign in to unlock personalized playlists.');
             this.updateHomeSummary();
+            this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
         }
     }
 
@@ -358,8 +382,15 @@ class MusicPlayer {
     async initializeForUser() {
         if (!this.userContext) return;
 
+        this.friendPosts = [];
+        this.friendPostsLoaded = false;
+        this.renderFriendsPostsLoading();
+
         await this.loadLibraryState();
-        await this.loadPlaylistSections();
+        await Promise.all([
+            this.loadPlaylistSections(),
+            this.loadFriendsPosts()
+        ]);
     }
 
     updateStatus(message) {
@@ -405,6 +436,8 @@ class MusicPlayer {
             }
 
             const data = await response.json();
+            const userPostData = Array.isArray(data.userPlaylistPosts) ? data.userPlaylistPosts : [];
+
             this.savedPlaylists = new Set(
                 (data.savedPlaylists || []).map(entry => entry.playlist.id)
             );
@@ -414,6 +447,7 @@ class MusicPlayer {
             this.userPlaylists = (data.userPlaylists || [])
                 .map(entry => this.normalizeUserPlaylist(entry))
                 .filter(Boolean);
+            this.userPlaylistPosts = userPostData;
             this.rebuildUserPlaylistSongIndex();
             this.refreshPlaylistSaveIndicators();
             this.libraryLoaded = true;
@@ -635,6 +669,290 @@ class MusicPlayer {
                 ${message}
             </div>
         `;
+    }
+
+    getFriendsFeedContainers() {
+        const containers = [
+            document.getElementById('friends-posts-feed'),
+            document.getElementById('friends-posts-feed-panel'),
+            document.getElementById('friends-posts-feed-inline')
+        ];
+
+        if (Array.isArray(window.musicareFriendsFeedContainers)) {
+            window.musicareFriendsFeedContainers.forEach(container => {
+                if (container && !containers.includes(container)) {
+                    containers.push(container);
+                }
+            });
+        }
+
+        return containers.filter(Boolean);
+    }
+
+    renderFriendsPostsLoading() {
+        this.getFriendsFeedContainers().forEach(container => {
+            if (!container) return;
+            container.innerHTML = `
+                <div class="friends-posts-state loading">
+                    <div class="friends-posts-spinner"></div>
+                    <p>Loading posts from your friends...</p>
+                </div>
+            `;
+        });
+    }
+
+    renderFriendsPostsEmpty(message = 'No posts from friends yet.') {
+        this.getFriendsFeedContainers().forEach(container => {
+            if (!container) return;
+            container.innerHTML = `
+                <div class="friends-posts-state empty">
+                    <p>${message}</p>
+                </div>
+            `;
+        });
+    }
+
+    renderFriendsPosts() {
+        const containers = this.getFriendsFeedContainers();
+        if (!containers.length) return;
+
+        const visiblePosts = this.friendPosts.filter(post => post && post.playlist).slice(0, 5);
+
+        if (!visiblePosts.length) {
+            this.renderFriendsPostsEmpty('No posts from friends yet. Encourage them to share a playlist!');
+            return;
+        }
+
+        const createFeedContent = () => {
+            const fragment = document.createDocumentFragment();
+            visiblePosts.forEach(post => {
+                const card = this.createFriendPostCard(post);
+                if (card) {
+                    fragment.appendChild(card);
+                }
+            });
+            return fragment;
+        };
+
+        containers.forEach(container => {
+            container.innerHTML = '';
+            container.appendChild(createFeedContent());
+        });
+    }
+
+    createFriendPostCard(post) {
+        if (!post?.playlist) return null;
+
+        const playlist = post.playlist;
+        const isOwnPost = this.userContext?.id && post.author?.id && post.author.id === this.userContext.id;
+        const authorName = isOwnPost
+            ? 'You'
+            : (post.author?.displayName || post.author?.username || 'Friend');
+        const avatarSource = post.author?.displayName || post.author?.username || 'Friend';
+        const initials = (avatarSource.match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase() || '♪';
+        const timeAgo = this.formatRelativeTime(post.createdAt);
+        const caption = (post.caption || '').trim();
+        const isSaved = this.savedPlaylists.has(playlist.id);
+        const moodLabel = formatMoodLabel(playlist.mood || 'wellness');
+        const tracks = Array.isArray(playlist.tracks) ? playlist.tracks : [];
+        const previewTracks = tracks.slice(0, 3);
+
+        const card = document.createElement('div');
+        card.className = 'friend-post-card';
+        card.dataset.playlistId = playlist.id;
+
+        const header = document.createElement('div');
+        header.className = 'friend-post-header';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'friend-post-avatar';
+        avatar.textContent = initials;
+
+        const authorBlock = document.createElement('div');
+        authorBlock.className = 'friend-post-author-block';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'friend-post-author';
+        nameEl.textContent = authorName;
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'friend-post-time';
+        timeEl.textContent = timeAgo;
+
+        authorBlock.appendChild(nameEl);
+        authorBlock.appendChild(timeEl);
+        header.appendChild(avatar);
+        header.appendChild(authorBlock);
+        card.appendChild(header);
+
+        if (caption) {
+            const captionEl = document.createElement('p');
+            captionEl.className = 'friend-post-caption';
+            captionEl.textContent = caption;
+            card.appendChild(captionEl);
+        }
+
+        const playlistCard = document.createElement('div');
+        playlistCard.className = 'library-playlist-card friend-post-playlist-card';
+        playlistCard.dataset.sharedPlaylistId = playlist.id;
+        playlistCard.dataset.authorId = post.author?.id || '';
+
+        const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
+        const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
+        const trackCount = playlist.trackCount ?? playlist.tracks?.length ?? 0;
+
+        playlistCard.innerHTML = `
+            <div class="library-playlist-cover ${playlist.mood || 'default'}" ${coverStyle}></div>
+            <div class="library-playlist-details">
+                <div class="library-playlist-headline">
+                    <div>
+                        <h4>${playlist.title || 'Untitled Playlist'}</h4>
+                        <p>${moodLabel} • ${trackCount} tracks</p>
+                    </div>
+                    <div class="library-playlist-actions">
+                        <button class="library-play-btn friend-post-play-btn" data-action="play-shared-playlist" data-shared-playlist-id="${playlist.id}">
+                            ▶ Play
+                        </button>
+                        <button class="friend-post-save-btn ${isSaved ? 'saved' : ''}" data-action="save-shared-playlist" data-shared-playlist-id="${playlist.id}">
+                            ${isSaved ? 'Saved' : 'Save'}
+                        </button>
+                    </div>
+                </div>
+                <div class="library-playlist-preview">
+                    ${previewTracks.length
+                        ? previewTracks.map(track => {
+                            const albumArtUrl = track.albumArt || 'https://via.placeholder.com/40x40/4a90e2/ffffff?text=♪';
+                            const durationLabel = track.duration ? this.formatDuration(track.duration) : '';
+                            const trackPosition = playlist.tracks?.findIndex(t => t.id === track.id) ?? -1;
+                            return `
+                                <div class="preview-track" data-action="play-shared-track" data-shared-playlist-id="${playlist.id}" data-track-index="${trackPosition}">
+                                    <img class="preview-track-art" src="${albumArtUrl}" alt="${track.title || 'Unknown'}" />
+                                    <div class="preview-track-text">
+                                        <span class="preview-track-name">${track.title || 'Unknown'}</span>
+                                        <span class="preview-track-artist">${track.artist || 'Unknown Artist'}</span>
+                                    </div>
+                                    <div class="preview-track-meta">
+                                        ${durationLabel ? `<span class="preview-track-duration">${durationLabel}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                        : '<div class="preview-track muted">Track list unavailable</div>'}
+                </div>
+            </div>
+        `;
+
+        const playBtn = playlistCard.querySelector('[data-action="play-shared-playlist"]');
+        const saveBtn = playlistCard.querySelector('[data-action="save-shared-playlist"]');
+
+        if (playBtn) {
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleSharedPlaylistPlay(playlist.id, 0);
+            });
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleSharedPlaylistSave(playlist.id);
+            });
+        }
+
+        playlistCard.querySelectorAll('[data-action="play-shared-track"]').forEach(trackRow => {
+            trackRow.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.closest('[data-action="save-shared-playlist"]')) return;
+                const trackIndex = parseInt(trackRow.getAttribute('data-track-index'), 10);
+                this.handleSharedPlaylistPlay(playlist.id, Number.isNaN(trackIndex) ? 0 : trackIndex);
+            });
+        });
+
+        card.appendChild(playlistCard);
+
+        return card;
+    }
+
+    getSharedPlaylistById(playlistId) {
+        if (!playlistId) return null;
+        const post = this.friendPosts.find(entry => entry?.playlist?.id === playlistId);
+        return post?.playlist || null;
+    }
+
+    handleSharedPlaylistPlay(playlistId, trackIndex = 0) {
+        const playlist = this.getSharedPlaylistById(playlistId);
+        if (!playlist) {
+            this.showError('Playlist unavailable. Please refresh.');
+            return;
+        }
+        this.playLibraryPlaylist(playlist, trackIndex);
+    }
+
+    handleSharedPlaylistSave(playlistId) {
+        const playlist = this.getSharedPlaylistById(playlistId);
+        if (!playlist) {
+            this.showError('Playlist unavailable. Please refresh.');
+            return;
+        }
+        this.togglePlaylistSave(playlist);
+    }
+
+    formatRelativeTime(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return '';
+        const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (diffSeconds < 60) return 'Just now';
+        if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+        if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
+        if (diffSeconds < 604800) return `${Math.floor(diffSeconds / 86400)}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    async loadFriendsPosts(forceReload = false) {
+        if (!this.userContext?.id) {
+            this.friendPosts = [];
+            this.friendPostsLoaded = false;
+            this.renderFriendsPostsEmpty('Sign in to see what your friends are sharing.');
+            return;
+        }
+
+        if (this.friendPostsLoading) {
+            return;
+        }
+
+        if (forceReload) {
+            this.friendPostsLoaded = false;
+        }
+
+        if (this.friendPostsLoaded && !forceReload) {
+            this.renderFriendsPosts();
+            return;
+        }
+
+        this.friendPostsLoading = true;
+        this.renderFriendsPostsLoading();
+
+        try {
+            const response = await fetch(`/api/posts?userId=${this.userContext.id}`);
+            if (!response.ok) {
+                throw new Error('Failed to load friend posts');
+            }
+            const data = await response.json();
+            this.friendPosts = Array.isArray(data.posts) ? data.posts : [];
+            this.friendPostsLoaded = true;
+
+            if (!this.friendPosts.length) {
+                this.renderFriendsPostsEmpty('No posts from friends yet. Encourage them to share a playlist!');
+            } else {
+                this.renderFriendsPosts();
+            }
+        } catch (error) {
+            console.error('Unable to load friends posts:', error);
+            this.renderFriendsPostsEmpty('Unable to load friends posts. Please try again later.');
+        } finally {
+            this.friendPostsLoading = false;
+        }
     }
 
     createPlaylistCard(playlist, isEmpty = false) {
@@ -934,10 +1252,19 @@ class MusicPlayer {
     updatePlaylistSaveButtons(playlistId) {
         const isSaved = this.savedPlaylists.has(playlistId);
         const buttons = document.querySelectorAll(`[data-playlist-id="${playlistId}"] .save-playlist-btn`);
+        const standaloneButtons = document.querySelectorAll(`.save-playlist-btn[data-playlist-id="${playlistId}"]`);
+        const friendButtons = document.querySelectorAll(`.friend-post-save-btn[data-shared-playlist-id="${playlistId}"]`);
 
-        buttons.forEach(button => {
+        const combinedButtons = new Set([...buttons, ...standaloneButtons]);
+
+        combinedButtons.forEach(button => {
             button.className = `save-playlist-btn ${isSaved ? 'saved' : ''}`;
             button.textContent = isSaved ? '★ Saved' : '+ Save playlist';
+        });
+
+        friendButtons.forEach(button => {
+            button.classList.toggle('saved', isSaved);
+            button.textContent = isSaved ? 'Saved' : 'Save';
         });
     }
 
@@ -1394,7 +1721,7 @@ class MusicPlayer {
         }
     }
 
-    playLibraryPlaylist(playlist) {
+    playLibraryPlaylist(playlist, startIndex = 0) {
         if (!playlist?.tracks?.length) {
             this.showError('This playlist has no playable tracks yet.');
             return;
@@ -1410,7 +1737,8 @@ class MusicPlayer {
         };
 
         this.selectPlaylist(normalized);
-        this.playTrack(0);
+        const safeIndex = Math.min(Math.max(0, startIndex || 0), normalized.tracks.length - 1);
+        this.playTrack(safeIndex);
     }
 
     playLibrarySong(song) {
