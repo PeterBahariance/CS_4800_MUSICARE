@@ -1,3 +1,13 @@
+/**
+ * Initialize Musicare Chatbot with Playlist Recommendation Integration
+ *
+ * @param {Object} options - Configuration options
+ * @param {string} options.inputId - ID of the input element
+ * @param {string} options.sendBtnId - ID of the send button
+ * @param {string} options.messagesId - ID of the messages container
+ * @param {string} options.apiPath - API endpoint path
+ * @returns {Object} - Chatbot interface with sendChat method
+ */
 export function initChat(options = {}) {
   const {
     inputId = 'chat-input',
@@ -15,6 +25,11 @@ export function initChat(options = {}) {
     return;
   }
 
+  /**
+   * Append a message to the chat interface
+   * @param {string} role - 'user' or 'bot'
+   * @param {string} text - Message text
+   */
   function appendMessage(role, text) {
     const el = document.createElement('div');
     el.className = `chat-message ${role}`;
@@ -24,12 +39,40 @@ export function initChat(options = {}) {
     messages.scrollTop = messages.scrollHeight;
   }
 
+  /**
+   * Set busy state for input controls
+   * @param {boolean} isBusy - Whether chatbot is processing
+   */
   function setBusy(isBusy) {
     input.disabled = isBusy;
     sendBtn.disabled = isBusy;
     sendBtn.textContent = isBusy ? '...' : 'Send';
   }
 
+  /**
+   * Trigger playlist recommendation on home page
+   * @param {Object} recommendation - Playlist recommendation metadata
+   */
+  function triggerPlaylistRecommendation(recommendation) {
+    console.log('🎵 Chatbot: Triggering playlist recommendation:', recommendation);
+
+    // Dispatch custom event to update home page playlists
+    window.dispatchEvent(new CustomEvent('musicare:chatbot-playlist-recommendation', {
+      detail: {
+        type: recommendation.type,
+        key: recommendation.key,
+        mood: recommendation.mood,
+        timestamp: new Date().toISOString()
+      }
+    }));
+
+    // Show visual feedback
+    appendMessage('bot', '🎵 Loading personalized playlists for you...');
+  }
+
+  /**
+   * Send chat message and handle response
+   */
   async function sendChat() {
     const text = input.value.trim();
     if (!text) return;
@@ -60,7 +103,16 @@ export function initChat(options = {}) {
 
       const data = await resp.json().catch(() => ({}));
       loadingEl.remove();
+
+      // Display chatbot response
       appendMessage('bot', data.reply || 'No reply from server.');
+
+      // If playlist recommendation is included, trigger playlist update
+      if (data.playlistRecommendation) {
+        console.log('🎵 Chatbot: Received playlist recommendation:', data.playlistRecommendation);
+        triggerPlaylistRecommendation(data.playlistRecommendation);
+      }
+
     } catch (err) {
       loadingEl.remove();
       appendMessage('bot', 'Network error. Please try again.');
@@ -82,5 +134,6 @@ export function initChat(options = {}) {
     }
   });
 
+  console.log('🤖 Chatbot: Initialized with playlist recommendation support');
   return { sendChat };
 }

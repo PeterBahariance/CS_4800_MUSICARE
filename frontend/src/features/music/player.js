@@ -302,6 +302,12 @@ class MusicPlayer {
                 this.loadFriendsPosts(true);
             }
         });
+
+        // Listen for chatbot playlist recommendations
+        window.addEventListener('musicare:chatbot-playlist-recommendation', (event) => {
+            console.log('🎵 Music Player: Received chatbot playlist recommendation:', event.detail);
+            this.handleChatbotRecommendation(event.detail);
+        });
     }
 
     bootstrap() {
@@ -2139,6 +2145,85 @@ class MusicPlayer {
         } catch (error) {
             console.error('🎵 Music Player: Refresh recommendations failed', error);
             this.showError('Unable to refresh recommendations. Please try again.');
+        } finally {
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = originalLabel;
+            }
+        }
+    }
+
+    /**
+     * Handle Chatbot Playlist Recommendation
+     *
+     * Triggered when chatbot detects user mood/need and recommends specific playlists.
+     * Loads playlists for the recommended category and displays them on the home page.
+     *
+     * @async
+     * @function handleChatbotRecommendation
+     * @param {Object} recommendation - Recommendation metadata from chatbot
+     * @param {string} recommendation.type - Category type ('goal' or 'genre')
+     * @param {string} recommendation.key - Category key (e.g., 'anxiety_relief', 'focus')
+     * @param {string} recommendation.mood - Detected mood/need
+     */
+    async handleChatbotRecommendation(recommendation) {
+        if (!this.userContext) {
+            console.warn('🎵 Music Player: Cannot load chatbot recommendations - user not signed in');
+            this.showError('Sign in to receive personalized playlist recommendations.');
+            return;
+        }
+
+        console.log(`🎵 Music Player: Loading playlists for chatbot recommendation - ${recommendation.type}:${recommendation.key}`);
+
+        const refreshBtn = document.getElementById('populate-playlists-btn');
+        const originalLabel = refreshBtn?.textContent?.trim() || '🔁 Refresh Recommendations';
+
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '🤖 Loading...';
+        }
+
+        this.updateStatus(`Curating playlists for ${recommendation.mood}...`);
+        this.renderEmptyState(`Loading ${recommendation.mood} playlists...`);
+
+        try {
+            // Build section config for the recommended category
+            const sectionConfig = {
+                id: `chatbot-${recommendation.type}-${recommendation.key}`,
+                title: `Recommended for You`,
+                subtitle: `Playlists curated for ${recommendation.mood}`,
+                request: {
+                    [recommendation.type]: recommendation.key
+                },
+                limit: 6
+            };
+
+            // Fetch playlists for the recommended category
+            const sectionData = await this.fetchSectionData(sectionConfig);
+
+            if (!sectionData || !sectionData.playlists || sectionData.playlists.length === 0) {
+                console.warn('🎵 Music Player: No playlists found for chatbot recommendation');
+                this.updateStatus('No playlists found. Try refreshing.');
+                this.showError('No playlists found for this recommendation. Try again later.');
+                return;
+            }
+
+            // Replace current sections with chatbot recommendation
+            this.sections = [sectionData];
+            this.renderSections();
+
+            // Auto-select first playlist
+            const firstPlaylist = sectionData.playlists[0];
+            if (firstPlaylist) {
+                this.selectPlaylist(firstPlaylist);
+                this.updateStatus(`Curated ${sectionData.playlists.length} playlists for ${recommendation.mood}.`);
+                console.log(`✅ Music Player: Loaded ${sectionData.playlists.length} playlists for chatbot recommendation`);
+            }
+
+        } catch (error) {
+            console.error('🎵 Music Player: Failed to load chatbot recommendation playlists:', error);
+            this.showError('Unable to load recommended playlists. Please try again.');
+            this.updateStatus('Failed to load recommendations.');
         } finally {
             if (refreshBtn) {
                 refreshBtn.disabled = false;

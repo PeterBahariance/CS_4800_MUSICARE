@@ -150,6 +150,17 @@ app.all('/api/comments', async (req, res) => {
   }
 });
 
+// Import and use the chat API handler (chatbot)
+import chatHandler from '../../api/chat.js';
+app.all('/api/chat', async (req, res) => {
+  try {
+    await chatHandler(req, res);
+  } catch (error) {
+    console.error('Chat API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all route for serving index.html
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
