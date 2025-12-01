@@ -412,6 +412,14 @@
                 }
             }
         });
+
+        const chatWidget = document.getElementById("chat-widget");
+        const toggleBtn = document.getElementById("chat-toggle-btn");
+
+        toggleBtn.addEventListener("click", () => {
+            chatWidget.classList.toggle("minimized");
+            toggleBtn.textContent = chatWidget.classList.contains("minimized") ? "+" : "−";
+        });
     </script>
 
     <!-- User Profile Popup -->
@@ -509,6 +517,10 @@
 
     <!-- Chatbot Widget -->
     <div id="chat-widget">
+        <div id="chat-widget-header">
+            <span>💬 Music Assistant</span>
+            <span id="chat-toggle-btn">−</span>
+        </div>
         <div id="chat-messages"></div>
         <div class="chat-input-row">
             <input type="text" id="chat-input" placeholder="Ask about playlists, moods, or music..." />
