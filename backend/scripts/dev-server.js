@@ -128,6 +128,28 @@ app.all('/api/posts', async (req, res) => {
   }
 });
 
+// Import and use the likes API handler
+import likesHandler from '../express-handlers/likes.js';
+app.all('/api/likes', async (req, res) => {
+  try {
+    await likesHandler(req, res);
+  } catch (error) {
+    console.error('Likes API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import and use the comments API handler
+import commentsHandler from '../express-handlers/comments.js';
+app.all('/api/comments', async (req, res) => {
+  try {
+    await commentsHandler(req, res);
+  } catch (error) {
+    console.error('Comments API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Catch-all route for serving index.html
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {

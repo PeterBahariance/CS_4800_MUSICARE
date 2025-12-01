@@ -51,6 +51,8 @@ model User {
   messages               Message[]
   lastMessageChats       Chat[]              @relation("LastMessageSender")
   playlistPosts          PlaylistPost[]
+  postLikes              PostLike[]
+  postComments           PostComment[]
 
   @@map("users")
 }
@@ -159,17 +161,46 @@ model UserSavedSong {
 }
 
 model PlaylistPost {
-  id         String   @id @default(uuid())
-  playlistId String   @map("playlist_id")
-  authorId   String   @map("author_id")
+  id         String        @id @default(uuid())
+  playlistId String        @map("playlist_id")
+  authorId   String        @map("author_id")
   caption    String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  playlist   Playlist      @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes      PostLike[]
+  comments   PostComment[]
 
   @@index([playlistId])
   @@index([authorId])
   @@map("playlist_posts")
+}
+
+model PostLike {
+  id        String       @id @default(uuid())
+  userId    String       @map("user_id")
+  postId    String       @map("post_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      PlaylistPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id        String       @id @default(uuid())
+  userId    String       @map("user_id")
+  postId    String       @map("post_id")
+  content   String
+  createdAt DateTime     @default(now()) @map("created_at")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      PlaylistPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("post_comments")
 }
 
 enum FriendRequestStatus {
@@ -193,6 +224,7 @@ enum PlaylistCategory {
 
 model Chat {
   id            String   @id @default(uuid())
+  name          String?  // Optional group chat name
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

@@ -279,6 +279,170 @@ async function getMessages(req, res) {
     }
 
     /**
+     * Action: Get a specific chat by ID
+     *
+     * Retrieves a single chat with full message history.
+     * Used when opening a chat to get all messages.
+     */
+    if (action === 'chatById') {
+      console.log('💬 Messages API: Fetching chat by ID');
+
+      const { chatId } = req.query;
+
+      if (!chatId) {
+        console.log('🚨 Messages API: Missing chatId parameter');
+        return res.status(400).json({
+          error: 'chatId is required for chatById action',
+          details: 'Provide chatId to get a specific chat',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      const chat = await prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  email: true
+                }
+              }
+            }
+          },
+          messages: {
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
+        }
+      });
+
+      if (!chat) {
+        console.log(`🚨 Messages API: Chat not found - ${chatId}`);
+        return res.status(404).json({
+          error: 'Chat not found',
+          details: 'The specified chat does not exist',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Verify user is a participant
+      const isParticipant = chat.participants.some(p => p.userId === userId);
+      if (!isParticipant) {
+        console.log(`🚨 Messages API: User ${userId} is not a participant in chat ${chatId}`);
+        return res.status(403).json({
+          error: 'Access denied',
+          details: 'You are not a participant in this chat',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      console.log(`✅ Messages API: Found chat with ${chat.messages.length} messages`);
+
+      return res.status(200).json({
+        chat,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    /**
+     * Action: Create a group chat
+     *
+     * Creates a new group chat with multiple participants.
+     * Requires an array of participant user IDs and an optional group name.
+     */
+    if (action === 'createGroup') {
+      console.log('💬 Messages API: Creating group chat');
+
+      const { participantIds, groupName } = req.query;
+
+      if (!participantIds) {
+        console.log('🚨 Messages API: Missing participantIds parameter');
+        return res.status(400).json({
+          error: 'participantIds is required for createGroup action',
+          details: 'Provide comma-separated participantIds to create a group chat',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Parse participant IDs (comma-separated string)
+      const participantIdArray = participantIds.split(',').map(id => id.trim()).filter(Boolean);
+
+      // Add the current user to participants if not already included
+      if (!participantIdArray.includes(userId)) {
+        participantIdArray.push(userId);
+      }
+
+      if (participantIdArray.length < 2) {
+        console.log('🚨 Messages API: Not enough participants for group chat');
+        return res.status(400).json({
+          error: 'At least 2 participants required',
+          details: 'Group chats require at least 2 participants',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      console.log(`➕ Messages API: Creating group chat with ${participantIdArray.length} participants`);
+
+      const chat = await prisma.chat.create({
+        data: {
+          name: groupName || null,
+          participants: {
+            create: participantIdArray.map(id => ({ userId: id }))
+          }
+        },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  email: true
+                }
+              }
+            }
+          },
+          messages: {
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
+        }
+      });
+
+      console.log(`✅ Messages API: Group chat created - ID: ${chat.id}`);
+
+      return res.status(201).json({
+        chat,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    /**
      * Invalid action parameter
      *
      * Return error if action is not recognized.
@@ -286,8 +450,8 @@ async function getMessages(req, res) {
     console.log(`🚨 Messages API: Invalid action - ${action}`);
     return res.status(400).json({
       error: 'Invalid action',
-      details: 'Supported actions: chat, chats',
-      supportedActions: ['chat', 'chats'],
+      details: 'Supported actions: chat, chats, createGroup',
+      supportedActions: ['chat', 'chats', 'createGroup'],
       timestamp: new Date().toISOString()
     });
 

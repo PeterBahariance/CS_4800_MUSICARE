@@ -713,6 +713,9 @@ class MusicPlayer {
     }
 
     renderFriendsPosts() {
+        console.log('🔄 renderFriendsPosts called - this will re-render ALL posts');
+        console.trace('Stack trace for renderFriendsPosts');
+
         const containers = this.getFriendsFeedContainers();
         if (!containers.length) return;
 
@@ -870,7 +873,341 @@ class MusicPlayer {
 
         card.appendChild(playlistCard);
 
+        // Add interaction section (likes and comments)
+        const interactionSection = document.createElement('div');
+        interactionSection.className = 'friend-post-interaction-section';
+
+        const likeCount = post.likeCount || 0;
+        const commentCount = post.commentCount || 0;
+        const userLiked = this.hasUserLikedPost(post);
+
+        interactionSection.innerHTML = `
+            <div class="friend-post-actions">
+                <button class="friend-post-like-btn ${userLiked ? 'liked' : ''}" data-post-id="${post.id}">
+                    <span class="like-icon">${userLiked ? '❤️' : '🤍'}</span>
+                    <span class="like-count">${likeCount}</span>
+                </button>
+                <button class="friend-post-comment-btn" data-post-id="${post.id}">
+                    <span class="comment-icon">💬</span>
+                    <span class="comment-count">${commentCount}</span>
+                </button>
+            </div>
+            <div class="friend-post-comments-container" data-post-id="${post.id}" style="display: block;">
+                <div class="friend-post-comments-list"></div>
+                <div class="friend-post-comment-input-wrapper">
+                    <input type="text" class="friend-post-comment-input" placeholder="Write a comment..." maxlength="500" />
+                    <button class="friend-post-comment-submit">Post</button>
+                </div>
+            </div>
+        `;
+
+        const likeBtn = interactionSection.querySelector('.friend-post-like-btn');
+        likeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.togglePostLike(post);
+        });
+
+        const commentBtn = interactionSection.querySelector('.friend-post-comment-btn');
+        commentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Comment button clicked for post:', post.id);
+            this.toggleComments(post.id);
+        });
+
+        const commentInput = interactionSection.querySelector('.friend-post-comment-input');
+        const commentSubmit = interactionSection.querySelector('.friend-post-comment-submit');
+
+        commentSubmit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.submitComment(post, commentInput);
+        });
+
+        commentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitComment(post, commentInput);
+            }
+        });
+
+        card.appendChild(interactionSection);
+
+        // Render existing comments directly on the elements we just created
+        const commentsList = interactionSection.querySelector('.friend-post-comments-list');
+        if (commentsList && post.comments && post.comments.length > 0) {
+            this.renderCommentsToElement(post, commentsList);
+        } else if (commentsList) {
+            commentsList.innerHTML = '<p class="no-comments">No comments yet. Be the first to comment!</p>';
+        }
+
         return card;
+    }
+
+    hasUserLikedPost(post) {
+        if (!this.userContext?.id || !post?.likes) return false;
+        return post.likes.some(like => like.user?.id === this.userContext.id || like.userId === this.userContext.id);
+    }
+
+    async togglePostLike(post) {
+        if (!this.userContext?.id) {
+            this.showError('Sign in to like posts.');
+            return;
+        }
+
+        if (!post?.id) return;
+
+        const userLiked = this.hasUserLikedPost(post);
+
+        try {
+            if (userLiked) {
+                // Unlike the post
+                const response = await fetch(`/api/likes?userId=${this.userContext.id}&postId=${post.id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to unlike post');
+
+                // Update local state
+                post.likes = post.likes.filter(like =>
+                    like.user?.id !== this.userContext.id && like.userId !== this.userContext.id
+                );
+                post.likeCount = post.likes.length;
+            } else {
+                // Like the post
+                const response = await fetch('/api/likes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: this.userContext.id,
+                        postId: post.id
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to like post');
+
+                // Update local state
+                if (!post.likes) post.likes = [];
+                post.likes.push({
+                    userId: this.userContext.id,
+                    user: {
+                        id: this.userContext.id,
+                        username: this.userContext.username,
+                        displayName: this.userContext.displayName
+                    }
+                });
+                post.likeCount = post.likes.length;
+            }
+
+            // Re-render the posts to update UI
+            this.renderFriendsPosts();
+        } catch (error) {
+            console.error('Error toggling post like:', error);
+            this.showError('Unable to update like. Please try again.');
+        }
+    }
+
+    toggleComments(postId) {
+        const container = document.querySelector(`.friend-post-comments-container[data-post-id="${postId}"]`);
+        if (!container) {
+            console.error('Comment container not found for post:', postId);
+            return;
+        }
+
+        const isVisible = container.style.display === 'block';
+
+        if (isVisible) {
+            container.style.display = 'none';
+        } else {
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+        }
+
+        console.log('Toggled comments for post:', postId, 'Now visible:', !isVisible, 'Container:', container);
+    }
+
+    renderComments(post) {
+        if (!post?.id) return;
+
+        // Find ALL containers with this post ID (there might be multiple across different feed containers)
+        const containers = document.querySelectorAll(`.friend-post-comments-container[data-post-id="${post.id}"]`);
+        if (!containers.length) {
+            console.error('Could not find any comments containers for post:', post.id);
+            return;
+        }
+
+        console.log('Rendering comments for post:', post.id, 'Found', containers.length, 'containers');
+
+        // Update all containers
+        containers.forEach(container => {
+            const commentsList = container.querySelector('.friend-post-comments-list');
+            if (!commentsList) {
+                console.error('Could not find comments list in container for post:', post.id);
+                return;
+            }
+
+            console.log('Rendering comments to container:', container);
+            this.renderCommentsToElement(post, commentsList);
+        });
+    }
+
+    renderCommentsToElement(post, commentsList) {
+        if (!commentsList) return;
+
+        commentsList.innerHTML = '';
+
+        console.log('renderCommentsToElement - post.id:', post.id);
+        console.log('renderCommentsToElement - post.comments:', post.comments);
+        console.log('renderCommentsToElement - post.comments is array:', Array.isArray(post.comments));
+        console.log('renderCommentsToElement - post.comments length:', post.comments?.length);
+
+        // Check each element individually
+        if (post.comments) {
+            console.log('renderCommentsToElement - checking each element:');
+            for (let i = 0; i < post.comments.length; i++) {
+                console.log(`  [${i}]:`, post.comments[i]);
+            }
+        }
+
+        // Filter out any undefined/null values
+        const validComments = post.comments?.filter(c => c != null) || [];
+        console.log('renderCommentsToElement - valid comments after filtering:', validComments.length);
+
+        if (validComments.length === 0) {
+            console.log('renderCommentsToElement - NO VALID COMMENTS, showing empty message');
+            commentsList.innerHTML = '<p class="no-comments">No comments yet. Be the first to comment!</p>';
+            return;
+        }
+
+        console.log('renderCommentsToElement - RENDERING', validComments.length, 'comments');
+
+        validComments.forEach(comment => {
+            const commentEl = document.createElement('div');
+            commentEl.className = 'friend-post-comment';
+            commentEl.dataset.commentId = comment.id;
+
+            const displayName = comment.user?.displayName || comment.user?.username || 'User';
+            const timeAgo = this.getTimeAgo(new Date(comment.createdAt));
+            const isOwnComment = this.userContext?.id === comment.userId;
+
+            commentEl.innerHTML = `
+                <div class="comment-header">
+                    <span class="comment-author">${displayName}</span>
+                    <span class="comment-time">${timeAgo}</span>
+                    ${isOwnComment ? `<button class="comment-delete-btn" data-comment-id="${comment.id}">×</button>` : ''}
+                </div>
+                <div class="comment-content">${this.escapeHtml(comment.content)}</div>
+            `;
+
+            if (isOwnComment) {
+                const deleteBtn = commentEl.querySelector('.comment-delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteComment(post, comment.id);
+                });
+            }
+
+            commentsList.appendChild(commentEl);
+        });
+    }
+
+    async submitComment(post, inputElement) {
+        if (!this.userContext?.id) {
+            this.showError('Sign in to comment on posts.');
+            return;
+        }
+
+        const content = inputElement.value.trim();
+        if (!content) return;
+
+        if (content.length > 500) {
+            this.showError('Comment must be 500 characters or less.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: this.userContext.id,
+                    postId: post.id,
+                    content
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to post comment');
+
+            const data = await response.json();
+            console.log('Comment posted successfully:', data.comment);
+
+            // Find the post in friendPosts array and update it
+            const postInArray = this.friendPosts.find(p => p.id === post.id);
+            const postToUpdate = postInArray || post;
+
+            if (!postToUpdate.comments) postToUpdate.comments = [];
+            postToUpdate.comments.push(data.comment);
+            postToUpdate.commentCount = postToUpdate.comments.length;
+            console.log('Updated post. Total comments:', postToUpdate.comments.length);
+
+            // Clear input
+            inputElement.value = '';
+
+            // Ensure comments section is visible
+            const container = document.querySelector(`.friend-post-comments-container[data-post-id="${postToUpdate.id}"]`);
+            if (container) {
+                container.style.display = 'block';
+                container.style.visibility = 'visible';
+                container.style.opacity = '1';
+            }
+
+            // Re-render comments and update count
+            console.log('About to render comments...');
+            this.renderComments(postToUpdate);
+            this.updateCommentCount(postToUpdate.id, postToUpdate.commentCount);
+            console.log('Finished rendering comments');
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            this.showError('Unable to post comment. Please try again.');
+        }
+    }
+
+    async deleteComment(post, commentId) {
+        if (!this.userContext?.id) return;
+
+        try {
+            const response = await fetch(`/api/comments?commentId=${commentId}&userId=${this.userContext.id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Failed to delete comment');
+
+            // Find the post in friendPosts array and update it
+            const postInArray = this.friendPosts.find(p => p.id === post.id);
+            const postToUpdate = postInArray || post;
+
+            postToUpdate.comments = postToUpdate.comments.filter(c => c.id !== commentId);
+            postToUpdate.commentCount = postToUpdate.comments.length;
+
+            // Re-render comments and update count
+            this.renderComments(postToUpdate);
+            this.updateCommentCount(postToUpdate.id, postToUpdate.commentCount);
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            this.showError('Unable to delete comment. Please try again.');
+        }
+    }
+
+    updateCommentCount(postId, count) {
+        const btn = document.querySelector(`.friend-post-comment-btn[data-post-id="${postId}"] .comment-count`);
+        if (btn) {
+            btn.textContent = count;
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     getSharedPlaylistById(playlistId) {
@@ -907,6 +1244,11 @@ class MusicPlayer {
         if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
         if (diffSeconds < 604800) return `${Math.floor(diffSeconds / 86400)}d ago`;
         return date.toLocaleDateString();
+    }
+
+    getTimeAgo(date) {
+        // Alias for formatRelativeTime to support comments
+        return this.formatRelativeTime(date);
     }
 
     async loadFriendsPosts(forceReload = false) {

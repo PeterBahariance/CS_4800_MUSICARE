@@ -149,6 +149,18 @@
                             <input type="text" id="friends-search-input" placeholder="Search friends...">
                             <div class="search-icon">🔍</div>
                         </div>
+                        <div class="group-chat-controls" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <button id="toggle-group-mode-btn" class="group-mode-btn">
+                                ➕ Create Group Chat
+                            </button>
+                            <div id="group-creation-controls" style="display: none; margin-top: 10px;">
+                                <input type="text" id="group-name-input" placeholder="Group name (optional)" style="width: 100%; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="create-group-btn" class="create-group-btn">Create</button>
+                                    <button id="cancel-group-btn" class="cancel-group-btn">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
                         <div id="friends-chat-list" class="friends-chat-list">
                             <div class="no-friends-message">
                                 No friends available for messaging

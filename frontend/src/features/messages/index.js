@@ -85,6 +85,18 @@ class MessagingSystem {
          */
         this.pollingInterval = null;
 
+        /**
+         * Group chat mode flag
+         * @type {boolean}
+         */
+        this.groupChatMode = false;
+
+        /**
+         * Selected friends for group chat
+         * @type {Set<string>}
+         */
+        this.selectedFriends = new Set();
+
         this.init();
     }
 
@@ -183,6 +195,24 @@ class MessagingSystem {
             });
         }
 
+        // Group chat mode toggle
+        const toggleGroupModeBtn = document.getElementById('toggle-group-mode-btn');
+        if (toggleGroupModeBtn) {
+            toggleGroupModeBtn.addEventListener('click', () => this.toggleGroupMode());
+        }
+
+        // Create group button
+        const createGroupBtn = document.getElementById('create-group-btn');
+        if (createGroupBtn) {
+            createGroupBtn.addEventListener('click', () => this.createGroupChat());
+        }
+
+        // Cancel group button
+        const cancelGroupBtn = document.getElementById('cancel-group-btn');
+        if (cancelGroupBtn) {
+            cancelGroupBtn.addEventListener('click', () => this.cancelGroupMode());
+        }
+
         // Friend search
         const friendsSearchInput = document.getElementById('friends-search-input');
         if (friendsSearchInput) {
@@ -195,29 +225,34 @@ class MessagingSystem {
     /**
      * Load Friends List
      *
-     * Fetches the user's friends from the API and displays them
-     * in the sidebar for messaging.
+     * Fetches the user's friends and existing chats from the API
+     * and displays them in the sidebar for messaging.
      *
      * @async
      * @function loadFriendsList
      */
     async loadFriendsList() {
-        console.log('💬 MessagingSystem: Loading friends list');
+        console.log('💬 MessagingSystem: Loading friends list and chats');
 
         try {
-            const response = await fetch(`/api/friends?action=friends&userId=${this.currentUser.id}`);
+            // Load both friends and existing chats
+            const [friendsResponse, chatsResponse] = await Promise.all([
+                fetch(`/api/friends?action=friends&userId=${this.currentUser.id}`),
+                fetch(`/api/messages?action=chats&userId=${this.currentUser.id}`)
+            ]);
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch friends');
+            if (!friendsResponse.ok || !chatsResponse.ok) {
+                throw new Error('Failed to fetch friends or chats');
             }
 
-            const data = await response.json();
-            console.log('💬 MessagingSystem: Friends data:', data);
+            const friendsData = await friendsResponse.json();
+            const chatsData = await chatsResponse.json();
+
+            console.log('💬 MessagingSystem: Friends data:', friendsData);
+            console.log('💬 MessagingSystem: Chats data:', chatsData);
 
             // Transform the friends data to flatten the nested structure
-            const friends = (data.friends || []).map(friendship => {
-                // The API returns { id: friendshipId, friend: { id, username, displayName, ... } }
-                // We need to flatten it to { id: userId, username, displayName, ... }
+            const friends = (friendsData.friends || []).map(friendship => {
                 const friendData = friendship.friend;
                 return {
                     id: friendData.id,
@@ -228,7 +263,13 @@ class MessagingSystem {
             });
 
             console.log('💬 MessagingSystem: Transformed friends:', friends);
-            this.displayFriendsList(friends);
+
+            // Store both for later use
+            this.allFriends = friends;
+            this.allChats = chatsData.chats || [];
+
+            // Display combined list
+            this.displayChatsAndFriends();
 
         } catch (error) {
             console.error('💬 MessagingSystem: Error loading friends:', error);
@@ -237,10 +278,107 @@ class MessagingSystem {
     }
 
     /**
+     * Display Chats and Friends
+     *
+     * Renders existing chats (including groups) and friends in the sidebar.
+     *
+     * @function displayChatsAndFriends
+     */
+    displayChatsAndFriends() {
+        const friendsChatList = document.getElementById('friends-chat-list');
+        if (!friendsChatList) return;
+
+        // In group mode, show friends for selection
+        if (this.groupChatMode) {
+            this.displayFriendsList(this.allFriends || []);
+            return;
+        }
+
+        const items = [];
+
+        // Add existing chats (including group chats)
+        if (this.allChats && this.allChats.length > 0) {
+            this.allChats.forEach(chat => {
+                const isGroup = chat.participants.length > 2;
+                let displayName, avatar;
+
+                if (isGroup) {
+                    // Group chat
+                    if (chat.name) {
+                        displayName = chat.name;
+                    } else {
+                        const otherParticipants = chat.participants
+                            .filter(p => p.userId !== this.currentUser.id)
+                            .map(p => p.user.displayName || p.user.username)
+                            .join(', ');
+                        displayName = otherParticipants || 'Group Chat';
+                    }
+                    avatar = '👥';
+                } else {
+                    // 1-on-1 chat
+                    const otherUser = chat.participants.find(p => p.userId !== this.currentUser.id)?.user;
+                    displayName = otherUser?.displayName || otherUser?.username || 'User';
+                    avatar = displayName.charAt(0).toUpperCase();
+                }
+
+                const lastMessage = chat.lastMessage || 'No messages yet';
+
+                items.push(`
+                    <div class="friend-item" data-chat-id="${chat.id}" onclick="messagingSystem.selectChat('${chat.id}')">
+                        <div class="friend-avatar">${avatar}</div>
+                        <div class="friend-info">
+                            <div class="friend-name">${displayName}</div>
+                            <div class="friend-last-message">${this.escapeHtml(lastMessage.substring(0, 30))}${lastMessage.length > 30 ? '...' : ''}</div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // Add friends who don't have chats yet
+        if (this.allFriends && this.allFriends.length > 0) {
+            const friendsWithChats = new Set();
+            this.allChats?.forEach(chat => {
+                if (chat.participants.length === 2) {
+                    const otherUser = chat.participants.find(p => p.userId !== this.currentUser.id);
+                    if (otherUser) friendsWithChats.add(otherUser.userId);
+                }
+            });
+
+            this.allFriends.forEach(friend => {
+                if (!friendsWithChats.has(friend.id)) {
+                    const displayName = friend.displayName || friend.username || 'User';
+                    const avatar = displayName.charAt(0).toUpperCase();
+
+                    items.push(`
+                        <div class="friend-item" data-friend-id="${friend.id}" onclick="messagingSystem.selectFriend('${friend.id}')">
+                            <div class="friend-avatar">${avatar}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${displayName}</div>
+                                <div class="friend-last-message">Click to start chatting</div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        if (items.length === 0) {
+            friendsChatList.innerHTML = `
+                <div class="no-friends-message">
+                    No friends or chats available
+                </div>
+            `;
+        } else {
+            friendsChatList.innerHTML = items.join('');
+        }
+    }
+
+    /**
      * Display Friends List
      *
      * Renders the friends list in the sidebar with click handlers
-     * to start conversations.
+     * to start conversations. Used in group selection mode.
      *
      * @function displayFriendsList
      * @param {Array} friends - Array of friend objects
@@ -263,20 +401,19 @@ class MessagingSystem {
         friendsChatList.innerHTML = friends.map(friend => {
             const displayName = friend.displayName || friend.username || 'User';
             const avatar = displayName.charAt(0).toUpperCase();
+            const isSelected = this.selectedFriends.has(friend.id);
 
             return `
-                <div class="friend-item" data-friend-id="${friend.id}" onclick="messagingSystem.selectFriend('${friend.id}')">
+                <div class="friend-item group-select-mode ${isSelected ? 'selected' : ''}" data-friend-id="${friend.id}" onclick="messagingSystem.toggleFriendSelection('${friend.id}')">
+                    <input type="checkbox" class="friend-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); messagingSystem.toggleFriendSelection('${friend.id}')">
                     <div class="friend-avatar">${avatar}</div>
                     <div class="friend-info">
                         <div class="friend-name">${displayName}</div>
-                        <div class="friend-last-message">Click to start chatting</div>
+                        <div class="friend-last-message">Select for group</div>
                     </div>
                 </div>
             `;
         }).join('');
-
-        // Store friends for filtering
-        this.allFriends = friends;
     }
 
     /**
@@ -296,6 +433,86 @@ class MessagingSystem {
         });
 
         this.displayFriendsList(filtered);
+    }
+
+    /**
+     * Select Chat
+     *
+     * Opens an existing chat (including group chats) by chat ID.
+     * Fetches the full chat history from the backend.
+     *
+     * @async
+     * @function selectChat
+     * @param {string} chatId - ID of the chat to open
+     */
+    async selectChat(chatId) {
+        console.log('💬 MessagingSystem: Selecting chat:', chatId);
+
+        // Find chat in cached list to get basic info
+        const cachedChat = this.allChats?.find(c => c.id === chatId);
+        if (!cachedChat) {
+            console.error('💬 MessagingSystem: Chat not found in cache');
+            return;
+        }
+
+        try {
+            // Fetch full chat with all messages from backend
+            const isGroup = cachedChat.participants.length > 2;
+
+            let response;
+            if (isGroup) {
+                // For group chats, fetch by chatId
+                console.log('💬 MessagingSystem: Loading group chat by ID');
+                response = await fetch(
+                    `/api/messages?action=chatById&userId=${this.currentUser.id}&chatId=${chatId}`
+                );
+            } else {
+                // 1-on-1 chat - fetch full history using friendId
+                const otherUser = cachedChat.participants.find(p => p.userId !== this.currentUser.id);
+                if (!otherUser) {
+                    console.error('💬 MessagingSystem: Could not find other user in chat');
+                    return;
+                }
+
+                response = await fetch(
+                    `/api/messages?action=chat&userId=${this.currentUser.id}&friendId=${otherUser.userId}`
+                );
+            }
+
+            if (!response.ok) {
+                throw new Error('Failed to load chat');
+            }
+
+            const data = await response.json();
+            console.log('💬 MessagingSystem: Full chat data loaded:', data);
+
+            this.currentChat = data.chat;
+
+            // Check if it's a group or 1-on-1
+            if (isGroup) {
+                this.currentFriend = null;
+                this.updateChatHeaderForGroup(data.chat);
+            } else {
+                // Set currentFriend for 1-on-1 chats
+                const otherUser = data.chat.participants.find(p => p.userId !== this.currentUser.id)?.user;
+                this.currentFriend = otherUser ? {
+                    id: otherUser.id,
+                    username: otherUser.username,
+                    displayName: otherUser.displayName,
+                    email: otherUser.email
+                } : null;
+                this.updateChatHeader(this.currentFriend, 'Online');
+            }
+
+            this.displayMessages(data.chat.messages || []);
+
+            // Start polling for new messages
+            this.startPolling();
+
+        } catch (error) {
+            console.error('💬 MessagingSystem: Error loading chat:', error);
+            this.showMessage('Failed to load chat', 'error');
+        }
     }
 
     /**
@@ -472,8 +689,12 @@ class MessagingSystem {
             // Clear input
             messageInput.value = '';
 
-            // Reload messages
-            await this.selectFriend(this.currentFriend.id);
+            // Reload messages - use selectChat for groups, selectFriend for 1-on-1
+            if (this.currentFriend) {
+                await this.selectFriend(this.currentFriend.id);
+            } else {
+                await this.selectChat(this.currentChat.id);
+            }
 
         } catch (error) {
             console.error('💬 MessagingSystem: Error sending message:', error);
@@ -499,11 +720,21 @@ class MessagingSystem {
 
         // Poll every 3 seconds
         this.pollingInterval = setInterval(async () => {
-            if (this.currentChat && this.currentFriend) {
+            if (this.currentChat) {
                 try {
-                    const response = await fetch(
-                        `/api/messages?action=chat&userId=${this.currentUser.id}&friendId=${this.currentFriend.id}`
-                    );
+                    let response;
+
+                    // For 1-on-1 chats, use the friend ID
+                    if (this.currentFriend) {
+                        response = await fetch(
+                            `/api/messages?action=chat&userId=${this.currentUser.id}&friendId=${this.currentFriend.id}`
+                        );
+                    } else {
+                        // For group chats, fetch by chat ID
+                        response = await fetch(
+                            `/api/messages?action=chatById&userId=${this.currentUser.id}&chatId=${this.currentChat.id}`
+                        );
+                    }
 
                     if (response.ok) {
                         const data = await response.json();
@@ -598,6 +829,151 @@ class MessagingSystem {
         setTimeout(() => {
             toast.remove();
         }, 3000);
+    }
+
+    /**
+     * Toggle Group Chat Mode
+     *
+     * Switches between normal chat mode and group creation mode.
+     *
+     * @function toggleGroupMode
+     */
+    toggleGroupMode() {
+        this.groupChatMode = !this.groupChatMode;
+        this.selectedFriends.clear();
+
+        const groupControls = document.getElementById('group-creation-controls');
+        const toggleBtn = document.getElementById('toggle-group-mode-btn');
+
+        if (this.groupChatMode) {
+            groupControls.style.display = 'block';
+            toggleBtn.textContent = '❌ Cancel Group Mode';
+            toggleBtn.style.backgroundColor = '#6c757d';
+        } else {
+            groupControls.style.display = 'none';
+            toggleBtn.textContent = '➕ Create Group Chat';
+            toggleBtn.style.backgroundColor = '';
+        }
+
+        // Refresh display to show/hide checkboxes
+        this.displayChatsAndFriends();
+    }
+
+    /**
+     * Cancel Group Mode
+     *
+     * Exits group creation mode without creating a group.
+     *
+     * @function cancelGroupMode
+     */
+    cancelGroupMode() {
+        this.toggleGroupMode();
+        const groupNameInput = document.getElementById('group-name-input');
+        if (groupNameInput) {
+            groupNameInput.value = '';
+        }
+    }
+
+    /**
+     * Toggle Friend Selection
+     *
+     * Adds or removes a friend from the selected group.
+     *
+     * @function toggleFriendSelection
+     * @param {string} friendId - Friend ID to toggle
+     */
+    toggleFriendSelection(friendId) {
+        if (this.selectedFriends.has(friendId)) {
+            this.selectedFriends.delete(friendId);
+        } else {
+            this.selectedFriends.add(friendId);
+        }
+
+        // Refresh the friends list to update checkboxes
+        if (this.allFriends) {
+            this.displayFriendsList(this.allFriends);
+        }
+    }
+
+    /**
+     * Create Group Chat
+     *
+     * Creates a new group chat with selected friends.
+     *
+     * @async
+     * @function createGroupChat
+     */
+    async createGroupChat() {
+        if (this.selectedFriends.size < 1) {
+            this.showMessage('Please select at least one friend for the group', 'error');
+            return;
+        }
+
+        const groupName = document.getElementById('group-name-input').value.trim();
+        const participantIds = Array.from(this.selectedFriends).join(',');
+
+        try {
+            const url = `/api/messages?action=createGroup&userId=${this.currentUser.id}&participantIds=${participantIds}${groupName ? `&groupName=${encodeURIComponent(groupName)}` : ''}`;
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Failed to create group chat');
+            }
+
+            const data = await response.json();
+            console.log('💬 MessagingSystem: Group chat created:', data);
+
+            this.showMessage('Group chat created successfully!', 'success');
+
+            // Reload the chat list to show the new group
+            await this.loadFriendsList();
+
+            // Exit group mode
+            this.cancelGroupMode();
+
+            // Open the new group chat
+            this.currentChat = data.chat;
+            this.currentFriend = null; // It's a group, not a single friend
+            this.displayMessages(data.chat.messages || []);
+            this.updateChatHeaderForGroup(data.chat);
+
+            // Start polling for new messages
+            this.startPolling();
+
+        } catch (error) {
+            console.error('💬 MessagingSystem: Error creating group chat:', error);
+            this.showMessage('Failed to create group chat', 'error');
+        }
+    }
+
+    /**
+     * Update Chat Header for Group
+     *
+     * Updates the chat header to show group information.
+     *
+     * @function updateChatHeaderForGroup
+     * @param {Object} chat - Chat object
+     */
+    updateChatHeaderForGroup(chat) {
+        const chatPartnerName = document.querySelector('.chat-partner-name');
+        const chatStatus = document.querySelector('.chat-status');
+        const chatAvatar = document.querySelector('.chat-avatar');
+
+        if (chatPartnerName && chatStatus && chatAvatar) {
+            if (chat.name) {
+                chatPartnerName.textContent = chat.name;
+            } else {
+                // Show participant names
+                const participantNames = chat.participants
+                    .filter(p => p.userId !== this.currentUser.id)
+                    .map(p => p.user.displayName || p.user.username)
+                    .join(', ');
+                chatPartnerName.textContent = participantNames || 'Group Chat';
+            }
+            chatStatus.textContent = `${chat.participants.length} members`;
+            chatAvatar.textContent = '👥';
+        }
     }
 }
 

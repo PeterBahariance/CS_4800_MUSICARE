@@ -460,6 +460,180 @@ a:visited {
     color: #b91c1c;
 }
 
+.friend-post-interaction-section {
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.friend-post-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.friend-post-like-btn,
+.friend-post-comment-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: transparent;
+    color: #1f2a37;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.friend-post-like-btn:hover {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.friend-post-comment-btn:hover {
+    background: rgba(74, 144, 226, 0.05);
+    border-color: rgba(74, 144, 226, 0.2);
+}
+
+.friend-post-like-btn.liked {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+}
+
+.friend-post-like-btn.liked:hover {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.friend-post-like-btn .like-icon,
+.friend-post-comment-btn .comment-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.friend-post-like-btn .like-count,
+.friend-post-comment-btn .comment-count {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.friend-post-comments-container {
+    margin-top: 12px;
+    padding: 16px;
+    border: 2px solid #4a90e2;
+    background: #e3f2fd;
+    border-radius: 8px;
+    min-height: 120px;
+    overflow: visible;
+}
+
+.friend-post-comments-container[style*="display: block"] {
+    display: block !important;
+}
+
+.friend-post-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.friend-post-comment {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1f2a37;
+}
+
+.comment-time {
+    font-size: 0.75rem;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.comment-delete-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: rgba(239, 68, 68, 0.6);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.2s ease;
+}
+
+.comment-delete-btn:hover {
+    color: #dc2626;
+}
+
+.comment-content {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: rgba(0, 0, 0, 0.75);
+    word-wrap: break-word;
+}
+
+.no-comments {
+    text-align: center;
+    color: rgba(0, 0, 0, 0.4);
+    font-size: 0.85rem;
+    font-style: italic;
+    margin: 8px 0;
+}
+
+.friend-post-comment-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.friend-post-comment-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.friend-post-comment-input:focus {
+    border-color: #4a90e2;
+}
+
+.friend-post-comment-submit {
+    padding: 10px 20px;
+    border-radius: 999px;
+    border: none;
+    background: #4a90e2;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.friend-post-comment-submit:hover {
+    background: #3b82f6;
+}
+
 .friend-post-playlist-card .friend-post-save-btn.saved {
     background: rgba(74, 144, 226, 0.12);
     border-color: #4a90e2;

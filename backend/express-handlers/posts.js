@@ -11,7 +11,7 @@ const MAX_CAPTION_LENGTH = 280;
 const DEFAULT_FEED_LIMIT = 20;
 
 /**
- * Fetch IDs for the user and all confirmed friends.
+ * Fetch IDs for all confirmed friends (excluding the user themselves).
  *
  * @param {string} userId
  * @returns {Promise<string[]>}
@@ -30,7 +30,7 @@ async function getFriendIds(userId) {
         }
     });
 
-    const ids = new Set([userId]);
+    const ids = new Set();  // Don't include the user's own ID
     friendships.forEach(entry => {
         if (entry.userId === userId) {
             ids.add(entry.friendId);
@@ -101,7 +101,11 @@ function formatPost(post) {
             id: post.author.id,
             displayName: post.author.displayName,
             username: post.author.username
-        } : null
+        } : null,
+        likes: post.likes || [],
+        likeCount: post.likes?.length || 0,
+        comments: post.comments || [],
+        commentCount: post.comments?.length || 0
     };
 }
 
@@ -153,6 +157,29 @@ async function handleGetPosts(req, res) {
                         }
                     }
                 }
+            },
+            likes: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            displayName: true
+                        }
+                    }
+                }
+            },
+            comments: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            displayName: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'asc' }
             }
         },
         orderBy: {
