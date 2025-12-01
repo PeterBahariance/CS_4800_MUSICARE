@@ -597,7 +597,7 @@ export const CATEGORY_CONFIG = {
             description: 'Soft lullabies to ease you into deep rest.'
         },
         focus: {
-            tags: ['focus', 'instrumental'],
+            tags: ['instrumental', 'calm'],
             mood: 'focus',
             title: 'Deep Focus',
             description: 'Minimal melodies to support concentration.'
@@ -625,6 +625,18 @@ export const CATEGORY_CONFIG = {
             mood: 'energy',
             title: 'Mood Boost',
             description: 'Feel-good rhythms to elevate your mindset.'
+        },
+        lofi_therapy: {
+            tags: ['lofi', 'chillhop', 'chill'],
+            mood: 'relaxation',
+            title: 'Lo-fi Therapy',
+            description: 'Soft lo-fi textures for gentle background comfort.'
+        },
+        'lo-fi_therapy': {
+            tags: ['lofi', 'chillhop', 'chill'],
+            mood: 'relaxation',
+            title: 'Lo-fi Therapy',
+            description: 'Soft lo-fi textures for gentle background comfort.'
         }
     },
     genre: {
@@ -645,6 +657,18 @@ export const CATEGORY_CONFIG = {
             mood: 'sleep',
             title: 'Nature Soundscapes',
             description: 'Birdsong, rain and forests for deep calm.'
+        },
+        lofi: {
+            tags: ['lofi', 'chillhop', 'chill'],
+            mood: 'relaxation',
+            title: 'Lo-fi Therapy',
+            description: 'Soft lo-fi textures for gentle background comfort.'
+        },
+        focus: {
+            tags: ['instrumental', 'calm'],
+            mood: 'focus',
+            title: 'Deep Focus',
+            description: 'Minimal, low-distraction beats to keep you in the zone.'
         }
     }
 };
@@ -657,6 +681,11 @@ export const GENRE_ALIASES = {
     'r&b': 'rnb',
     'rhythm and blues': 'rnb',
     'rnb': 'rnb',
+    'lo-fi': 'lofi',
+    lofi: 'lofi',
+    'deep focus': 'focus',
+    deep_focus: 'focus',
+    focus: 'focus',
     'nature sounds': 'nature',
     'nature sound': 'nature',
     'nature': 'nature',
@@ -680,19 +709,22 @@ export const GENRE_ALIASES = {
  * @returns {Promise<Array>} Array of generated playlists with tracks
  * @throws {Error} Unknown category configuration
  */
-export async function fetchCategoryPlaylists({ categoryType, categoryKey, minPlaylists = 3, tracksPerPlaylist = 8 }) {
+export async function fetchCategoryPlaylists({ categoryType, categoryKey, minPlaylists = 12, tracksPerPlaylist = 8, maxPlaylists = 30 }) {
     const config = CATEGORY_CONFIG[categoryType]?.[categoryKey];
     if (!config) {
         throw new Error(`Unknown category ${categoryType}:${categoryKey}`);
     }
 
-    const requiredTracks = minPlaylists * tracksPerPlaylist * 2; // Fetch extra for variety
+    const requiredTracks = maxPlaylists * tracksPerPlaylist; // Fetch enough for full pool
     let fetchedTracks = [];
-    let offset = 0;
     const pageSize = 50;
     const tagQuery = config.tags.join('+');
     let attempts = 0;
     const maxAttempts = 5;
+    const seenTrackIds = new Set();
+
+    // Deterministic offset so small catalogs always return data
+    let offset = 0;
 
     // Fetch tracks with pagination
     while (fetchedTracks.length < requiredTracks && attempts < maxAttempts) {
@@ -706,9 +738,23 @@ export async function fetchCategoryPlaylists({ categoryType, categoryKey, minPla
             break;
         }
 
-        fetchedTracks = fetchedTracks.concat(batch);
+        for (const track of batch) {
+            const trackId = track.jamendoId || track.id;
+            if (!trackId || seenTrackIds.has(trackId)) {
+                continue;
+            }
+            seenTrackIds.add(trackId);
+            fetchedTracks.push(track);
+        }
+
         offset += batch.length;
         attempts += 1;
+    }
+
+    // Shuffle tracks to produce unique playlist groupings each time
+    for (let i = fetchedTracks.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fetchedTracks[i], fetchedTracks[j]] = [fetchedTracks[j], fetchedTracks[i]];
     }
 
     // Generate playlists from fetched tracks
@@ -734,7 +780,7 @@ export async function fetchCategoryPlaylists({ categoryType, categoryKey, minPla
             tracks: slice
         });
 
-        if (playlists.length >= minPlaylists) break;
+        if (playlists.length >= maxPlaylists) break;
     }
 
     return playlists;

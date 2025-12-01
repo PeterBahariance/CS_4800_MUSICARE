@@ -68,7 +68,8 @@ const HEALTH_GOALS = [
   { value: 'exercise', label: 'Exercise Motivation' },
   { value: 'meditation', label: 'Meditation' },
   { value: 'anxiety_relief', label: 'Anxiety Relief' },
-  { value: 'mood_boost', label: 'Mood Boost' }
+  { value: 'mood_boost', label: 'Mood Boost' },
+  { value: 'lofi_therapy', label: 'Lo-fi Therapy' }
 ];
 
 /**
@@ -118,14 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             // Collect all form data from multi-step form
+            const selectedHealthGoals = getSelectedCheckboxes('healthGoals').map(normalizeSelectionValue);
+            const selectedMusicPreferences = getSelectedCheckboxes('musicPreferences').map(normalizeSelectionValue);
+
             const formData = {
                 email: document.getElementById('email')?.value.trim() || '',
                 password: document.getElementById('password')?.value || '',
                 confirmPassword: document.getElementById('confirm-password')?.value || '',
                 username: document.getElementById('username')?.value.trim() || '',
                 dailyListeningGoal: parseInt(document.getElementById('dailyListeningGoal')?.value) || null,
-                healthGoals: getSelectedCheckboxes('healthGoals'),
-                musicPreferences: getSelectedCheckboxes('musicPreferences')
+                healthGoals: selectedHealthGoals,
+                musicPreferences: selectedMusicPreferences
             };
 
             // Client-side validation
@@ -305,6 +309,14 @@ function validateStep(step) {
 function getSelectedCheckboxes(name) {
     const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
     return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function normalizeSelectionValue(value) {
+    return (value || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_');
 }
 
 function showError(message) {
