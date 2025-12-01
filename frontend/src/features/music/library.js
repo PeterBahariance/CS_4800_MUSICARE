@@ -499,6 +499,10 @@ class LibraryView {
                                 <button class="library-play-btn" data-action="play-playlist" data-playlist-id="${playlist.id}">
                                     ▶ Play
                                 </button>
+                                <button class="library-play-btn" data-action="shuffle-playlist" data-playlist-id="${playlist.id}">
+                                    <span class="library-play-btn-icon">🔀</span>
+                                    Shuffle
+                                </button>
                                 ${canPostPlaylist ? `
                                     <button class="library-post-btn ${hasPost ? 'posted' : ''}" data-action="${hasPost ? 'delete-post' : 'open-post-modal'}" data-playlist-id="${playlist.id}">
                                         ${hasPost ? 'Delete Post' : 'Post'}
@@ -607,6 +611,10 @@ class LibraryView {
                             <div class="library-playlist-actions">
                                 <button class="library-play-btn" data-action="play-playlist" data-playlist-id="${playlist.id}">
                                     ▶ Play
+                                </button>
+                                <button class="library-play-btn" data-action="shuffle-playlist" data-playlist-id="${playlist.id}">
+                                    <span class="library-play-btn-icon">🔀</span>
+                                    Shuffle
                                 </button>
                                 ${!this.readOnly ? `
                                     <button class="library-remove-btn" data-action="remove-playlist" data-playlist-id="${playlist.id}">
@@ -875,6 +883,15 @@ class LibraryView {
             });
         });
 
+        // Shuffle playlist buttons
+        this.root.querySelectorAll('[data-action="shuffle-playlist"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const playlistId = btn.getAttribute('data-playlist-id');
+                this.playPlaylist(playlistId, { shuffle: true });
+            });
+        });
+
         // Play song buttons
         this.root.querySelectorAll('[data-action="play-song"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -920,7 +937,7 @@ class LibraryView {
      *
      * @param {string} playlistId - ID of playlist to play
      */
-    playPlaylist(playlistId) {
+    playPlaylist(playlistId, options = {}) {
         const entry = this.state.playlists.find(item => item.playlist.id === playlistId)
             || this.state.myPlaylists.find(item => item.playlist.id === playlistId);
         if (!entry) {
@@ -934,7 +951,8 @@ class LibraryView {
             return;
         }
 
-        player.playLibraryPlaylist(entry.playlist);
+        const { shuffle = false, startIndex = 0 } = options;
+        player.playLibraryPlaylist(entry.playlist, startIndex, { shuffle });
     }
 
     /**

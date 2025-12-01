@@ -204,6 +204,12 @@ class MusicPlayer {
         this.savedSongs = new Set();
 
         /**
+         * Set of home playlist IDs that are expanded
+         * @type {Set<string>}
+         */
+        this.expandedHomePlaylists = new Set();
+
+        /**
          * Array of playlists created by the user
          * @type {Array<Object>}
          */
@@ -1323,6 +1329,11 @@ class MusicPlayer {
         const moodClass = playlist.mood || 'default';
         const trackCount = playlist.trackCount || playlist.tracks?.length || 0;
         const tracks = playlist.tracks || [];
+        const hasTracks = tracks.length > 0;
+        const previewLimit = 4;
+        const canToggle = tracks.length > previewLimit;
+        const isExpanded = this.expandedHomePlaylists.has(playlist.id);
+        const tracksToShow = isExpanded ? tracks : tracks.slice(0, previewLimit);
         const isSaved = this.savedPlaylists.has(playlist.id);
         const coverUrl = playlist.coverImage ? encodeURI(playlist.coverImage) : null;
         const coverStyle = coverUrl ? `style="background-image: url('${coverUrl}');"` : '';
@@ -1330,11 +1341,6 @@ class MusicPlayer {
         card.innerHTML = `
             <div class="playlist-cover">
                 <div class="cover-gradient ${moodClass}" ${coverStyle}></div>
-        <div class="play-button ${isEmpty ? 'disabled' : ''}" style="${isEmpty ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </div>
             </div>
             <div class="playlist-info">
                 <div class="playlist-info-header">
@@ -1344,9 +1350,18 @@ class MusicPlayer {
                 <p>${playlist.description || ''}</p>
                 <div class="playlist-stats">${trackCount} songs${trackCount > 0 ? ` • ${this.formatTotalDuration(tracks)}` : ''}</div>
                 ${!isEmpty ? `
-                <button class="save-playlist-btn ${isSaved ? 'saved' : ''}" data-playlist-id="${playlist.id}">
-                    ${isSaved ? '★ Saved' : '+ Save playlist'}
-                </button>` : ''}
+                <div class="playlist-actions-row">
+                    <button class="playlist-action-btn play" data-card-action="play" ${hasTracks ? '' : 'disabled'}>
+                        ▶ Play
+                    </button>
+                    <button class="playlist-action-btn shuffle" data-card-action="shuffle" ${hasTracks ? '' : 'disabled'}>
+                        <span class="playlist-action-icon">🔀</span>
+                        Shuffle
+                    </button>
+                    <button class="save-playlist-btn ${isSaved ? 'saved' : ''}" data-playlist-id="${playlist.id}">
+                        ${isSaved ? '★ Saved' : '+ Save playlist'}
+                    </button>
+                </div>` : ''}
             </div>
             <div class="playlist-tracks">
                 ${isEmpty || tracks.length === 0 ?
@@ -1355,7 +1370,7 @@ class MusicPlayer {
                             <div class="track-name">Personalized recommendations will appear here once your profile is ready.</div>
                         </div>
                     </div>` :
-                tracks.slice(0, 4).map(track => {
+                tracksToShow.map(track => {
                     const songSaved = this.savedSongs.has(track.id);
                     const inUserPlaylist = this.isSongInUserPlaylist(track.id);
                     return `
@@ -1374,23 +1389,34 @@ class MusicPlayer {
                                 </button>
                             </div>
                         </div>`;
-                }).join('') +
-                (tracks.length > 4 ? `<div class="track more-tracks">
-                        <div class="track-info">
-                            <div class="track-name">...and ${tracks.length - 4} more wellness tracks</div>
-                        </div>
-                    </div>` : '')
+                }).join('')
             }
             </div>
+            ${canToggle ? `
+                <div class="playlist-expand-row">
+                    <button class="playlist-expand-btn" data-card-action="toggle" data-playlist-id="${playlist.id}">
+                        ${isExpanded ? '▲ Show less' : `▼ Show all ${tracks.length} tracks`}
+                    </button>
+                </div>
+            ` : ''}
         `;
 
-        if (!isEmpty && tracks.length > 0) {
-            const playButton = card.querySelector('.play-button');
-            playButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.selectPlaylist(playlist);
-                this.play();
-            });
+        if (!isEmpty) {
+            const playButton = card.querySelector('[data-card-action="play"]');
+            if (playButton && hasTracks) {
+                playButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.playLibraryPlaylist(playlist);
+                });
+            }
+
+            const shuffleButton = card.querySelector('[data-card-action="shuffle"]');
+            if (shuffleButton && hasTracks) {
+                shuffleButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.playLibraryPlaylist(playlist, 0, { shuffle: true });
+                });
+            }
 
             const savePlaylistBtn = card.querySelector('.save-playlist-btn');
             if (savePlaylistBtn) {
@@ -1400,6 +1426,17 @@ class MusicPlayer {
                 });
             }
 
+            const toggleButton = card.querySelector('[data-card-action="toggle"]');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleHomePlaylistExpansion(playlist.id);
+                });
+            }
+
+        }
+
+        if (!isEmpty && hasTracks) {
             const trackElements = card.querySelectorAll('.track');
             trackElements.forEach((trackEl, trackIndex) => {
                 if (trackIndex < tracks.length) {
@@ -1412,8 +1449,7 @@ class MusicPlayer {
                     }
 
                     trackEl.addEventListener('click', () => {
-                        this.selectPlaylist(playlist);
-                        this.playTrack(trackIndex);
+                        this.playLibraryPlaylist(playlist, trackIndex);
                     });
                     trackEl.style.cursor = 'pointer';
 
@@ -1429,6 +1465,23 @@ class MusicPlayer {
         }
 
         return card;
+    }
+
+    /**
+     * Toggle expanded state for a home playlist card
+     *
+     * @param {string} playlistId
+     */
+    toggleHomePlaylistExpansion(playlistId) {
+        if (!playlistId) return;
+
+        if (this.expandedHomePlaylists.has(playlistId)) {
+            this.expandedHomePlaylists.delete(playlistId);
+        } else {
+            this.expandedHomePlaylists.add(playlistId);
+        }
+
+        this.renderSections();
     }
 
     selectPlaylist(playlist) {
@@ -1647,7 +1700,8 @@ class MusicPlayer {
                 body: JSON.stringify({
                     userId: this.userContext.id,
                     itemId: playlist.id,
-                    itemType: 'playlist'
+                    itemType: 'playlist',
+                    playlistData: this.serializePlaylistForSave(playlist)
                 })
             };
 
@@ -1673,6 +1727,30 @@ class MusicPlayer {
             console.error('Unable to update playlist save state:', error);
             this.showError('Unable to update playlist. Please try again.');
         }
+    }
+
+    serializePlaylistForSave(playlist) {
+        if (!playlist) return null;
+
+        return {
+            id: playlist.id,
+            title: playlist.title,
+            description: playlist.description,
+            mood: playlist.mood,
+            coverImage: playlist.coverImage,
+            category: playlist.category,
+            categoryKey: playlist.categoryKey,
+            tracks: (playlist.tracks || []).map((track, index) => ({
+                id: track.id,
+                jamendoId: track.jamendoId || track.id,
+                title: track.title,
+                artist: track.artist,
+                duration: track.duration,
+                audioUrl: track.audioUrl,
+                albumArt: track.albumArt,
+                position: typeof track.position === 'number' ? track.position : index
+            }))
+        };
     }
 
     /**
@@ -2081,7 +2159,8 @@ class MusicPlayer {
         }
     }
 
-    playLibraryPlaylist(playlist, startIndex = 0) {
+    playLibraryPlaylist(playlist, startIndex = 0, options = {}) {
+        const { shuffle = false } = options;
         if (!playlist?.tracks?.length) {
             this.showError('This playlist has no playable tracks yet.');
             return;
@@ -2096,9 +2175,25 @@ class MusicPlayer {
             trackCount: playlist.tracks.length
         };
 
+        let trackList = normalized.tracks;
+        if (shuffle) {
+            trackList = this.shuffleTracks(trackList);
+            normalized.tracks = trackList;
+        }
+
         this.selectPlaylist(normalized);
-        const safeIndex = Math.min(Math.max(0, startIndex || 0), normalized.tracks.length - 1);
+        const desiredIndex = shuffle ? 0 : (startIndex || 0);
+        const safeIndex = Math.min(Math.max(0, desiredIndex), normalized.tracks.length - 1);
         this.playTrack(safeIndex);
+    }
+
+    shuffleTracks(tracks = []) {
+        const pool = [...tracks];
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        return pool;
     }
 
     playLibrarySong(song) {

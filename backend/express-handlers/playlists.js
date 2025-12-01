@@ -1222,6 +1222,7 @@ async function handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw) {
         coverImage: coverImage,
         tracks: playlist.tracks.map((track, index) => ({
           id: track.jamendoId,
+          jamendoId: track.jamendoId,
           title: track.title,
           artist: track.artist,
           duration: track.duration,
