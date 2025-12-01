@@ -3449,7 +3449,6 @@ body.modal-open {
 
 /* Header bar for minimizing */
 #chat-widget-header {
-    /*background: #2a2a2a;*/
     padding: 10px;
     font-size: 15px;
     display: flex;
@@ -3458,8 +3457,8 @@ body.modal-open {
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-#chat-widget.minimized {
-    transform: translateY(80%); /* hides most of it */
+#chat-widget.minimized {    
+    transform: translateY(calc(80% - 2rem)); /* hides most of it */
     height: 40px !important;
 }
 

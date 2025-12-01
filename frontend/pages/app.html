@@ -314,8 +314,13 @@
             const userEmail = document.getElementById('user-email');
 
             if (user) {
+                // Show only first 3 characters
+                const masked = email.length > 3
+                    ? email.slice(0, 3) + "***"
+                    : email;
+                
                 // User is signed in
-                userEmail.textContent = user.email;
+                userEmail.textContent = masked;
                 userInfo.style.display = 'block';
             } else {
                 // User is signed out
