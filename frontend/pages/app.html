@@ -412,6 +412,14 @@
                 }
             }
         });
+
+        const chatWidget = document.getElementById("chat-widget");
+        const toggleBtn = document.getElementById("chat-toggle-btn");
+
+        toggleBtn.addEventListener("click", () => {
+            chatWidget.classList.toggle("minimized");
+            toggleBtn.textContent = chatWidget.classList.contains("minimized") ? "+" : "−";
+        });
     </script>
 
     <!-- User Profile Popup -->
