@@ -800,6 +800,7 @@ class MessagingSystem {
      * @param {string} message - Message text
      * @param {string} type - Message type: 'success', 'error', 'info'
      */
+    
     showMessage(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
