@@ -222,18 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Multi-step navigation
     const nextBtns = document.querySelectorAll('.next-step');
     const prevBtns = document.querySelectorAll('.prev-step');
-    
+
     nextBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
             if (validateStep(currentStep)) {
                 currentStep++;
                 showStep(currentStep);
             }
         });
     });
-    
+
     prevBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
             currentStep--;
             showStep(currentStep);
         });
