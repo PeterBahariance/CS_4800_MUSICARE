@@ -3493,3 +3493,14 @@ body.modal-open {
 
 
 
+/* Default style for larger screens */
+#user-email {
+  display: block;
+}
+
+/* Styles for smaller screens (e.g., smartphones) */
+@media screen and (max-width: 600px) {
+  #user-email {
+    display: none;
+  }
+}
