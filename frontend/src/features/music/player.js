@@ -82,6 +82,11 @@ const HEALTH_GOAL_METADATA = {
         title: 'Mood Boost',
         subtitle: 'Feel-good rhythms to lift your energy',
         moods: ['energy', 'focus']
+    },
+    lofi_therapy: {
+        title: 'Lo-fi Therapy',
+        subtitle: 'Soft lo-fi textures for gentle background comfort',
+        moods: ['relaxation']
     }
 };
 
@@ -92,7 +97,7 @@ const HEALTH_GOAL_METADATA = {
  *
  * @constant {number} SECTION_PLAYLIST_LIMIT
  */
-const SECTION_PLAYLIST_LIMIT = 3;
+const SECTION_PLAYLIST_LIMIT = 10;
 
 /**
  * Health Goal Aliases
@@ -102,7 +107,9 @@ const SECTION_PLAYLIST_LIMIT = 3;
  * @constant {Object} HEALTH_GOAL_ALIASES
  */
 const HEALTH_GOAL_ALIASES = {
-    mental_wellnes: 'mental_wellness'
+    mental_wellnes: 'mental_wellness',
+    'lo-fi_therapy': 'lofi_therapy',
+    deep_focus: 'focus'
 };
 
 /**
@@ -517,8 +524,8 @@ class MusicPlayer {
             return;
         }
 
-        this.updateStatus('Personalizing music for you...');
-        this.renderEmptyState('Building mixes tailored to your wellness goals...');
+        this.updateStatus('Loading playlists...');
+        this.renderEmptyState('Loading playlists...');
 
         const { sections, goalCount, prefCount } = this.buildSectionsConfig();
         this.updateHomeSummary({
@@ -536,7 +543,12 @@ class MusicPlayer {
                 )
             );
 
-            this.sections = sectionResults.filter(Boolean);
+        this.sections = sectionResults
+            .filter(Boolean)
+            .map(section => ({
+                ...section,
+                playlists: getRandomSubset(section.playlists, section.limit || SECTION_PLAYLIST_LIMIT)
+            }));
             this.renderSections();
 
             const firstPlaylist = this.sections.find(section => section.playlists?.length)?.playlists[0];
@@ -2107,13 +2119,38 @@ class MusicPlayer {
     }
 
     async populatePlaylists() {
-        return this.loadPlaylistSections();
+        if (!this.userContext) {
+            this.showError('Sign in to refresh recommendations.');
+            return;
+        }
+
+        const refreshBtn = document.getElementById('populate-playlists-btn');
+        const originalLabel = refreshBtn?.textContent?.trim() || '🔁 Refresh Recommendations';
+
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Refreshing...';
+        }
+
+        this.updateStatus('Refreshing recommendations...');
+
+        try {
+            await this.loadPlaylistSections();
+        } catch (error) {
+            console.error('🎵 Music Player: Refresh recommendations failed', error);
+            this.showError('Unable to refresh recommendations. Please try again.');
+        } finally {
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = originalLabel;
+            }
+        }
     }
 
     setupPlayerControls() {
         const refreshBtn = document.getElementById('populate-playlists-btn');
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadPlaylistSections());
+            refreshBtn.addEventListener('click', () => this.populatePlaylists());
         }
 
         const playPauseBtn = document.querySelector('.play-pause');
@@ -2181,6 +2218,20 @@ function normalizeTag(value) {
         .toString()
         .trim()
         .toLowerCase();
+}
+
+function getRandomSubset(items = [], maxItems = SECTION_PLAYLIST_LIMIT) {
+    if (!Array.isArray(items) || items.length <= maxItems) {
+        return items || [];
+    }
+
+    const pool = [...items];
+    for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    return pool.slice(0, maxItems);
 }
 
 // Initialize music player when DOM is ready

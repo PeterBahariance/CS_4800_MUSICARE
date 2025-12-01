@@ -87,6 +87,21 @@ async function getPlaylists(req, res) {
   }
 
   try {
+    // If goal/genre provided, always generate dynamic playlists
+    const categoryType = goal ? 'goal' : genre ? 'genre' : null;
+    const categoryKeyRaw = goal || genre;
+
+    if (categoryType && categoryKeyRaw) {
+      console.log(`🎵 Playlists API: Generating dynamic playlists for ${categoryType}:${categoryKeyRaw}`);
+      return await handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw);
+    }
+
+    // If goal/genre requested, always fetch dynamic playlists for fresh variety
+    if (goal || genre) {
+      console.log(`🎵 Playlists API: Fetching dynamic playlists for ${goal ? `goal:${goal}` : `genre:${genre}`}`);
+      return await handleCategoryPlaylists(req, res, goal ? 'goal' : 'genre', goal || genre);
+    }
+
     console.log('🎵 Playlists API: Fetching playlists from database...');
 
     /**
@@ -102,54 +117,6 @@ async function getPlaylists(req, res) {
     // Add mood filter if specified
     if (mood) {
       where.mood = mood;
-    }
-
-    // Add category filters if goal or genre specified
-    const categoryType = goal ? 'goal' : genre ? 'genre' : null;
-    const categoryKeyRaw = goal || genre;
-
-    if (categoryType && categoryKeyRaw) {
-      // Map health goals to populated playlist moods
-      const goalToMoodMap = {
-        'mental_wellness': ['anxiety', 'focus', 'sleep'],
-        'stress_relief': ['anxiety', 'sleep'],
-        'focus_enhancement': ['focus'],
-        'sleep_improvement': ['sleep'],
-        'mood_boost': ['anxiety', 'focus']
-      };
-
-      // Map genre preferences to populated playlist moods
-      const genreToMoodMap = {
-        'rock': ['genre_rock'],
-        'rnb': ['genre_rnb'],
-        'r&b': ['genre_rnb'],
-        'rb': ['genre_rnb']
-      };
-
-      const mappedMoods = categoryType === 'goal'
-        ? goalToMoodMap[categoryKeyRaw] || []
-        : genreToMoodMap[categoryKeyRaw] || [];
-
-      // First try to find existing playlists that match the category
-      const orConditions = [];
-
-      // Add mood filter if specified directly
-      if (mood) {
-        orConditions.push({ mood });
-      }
-
-      // Add mapped moods for goals/genres
-      if (mappedMoods.length > 0) {
-        orConditions.push({ mood: { in: mappedMoods } });
-      }
-
-      // Add category match for dynamic playlists
-      orConditions.push({ category: categoryType, categoryKey: categoryKeyRaw });
-
-      where = {
-        ...where,
-        OR: orConditions
-      };
     }
 
     console.log('🎵 Playlists API: Database query filter -', where);
@@ -219,12 +186,6 @@ async function getPlaylists(req, res) {
     });
 
     console.log('✅ Playlists API: Playlists formatted successfully');
-
-    // If no playlists found and category specified, try dynamic generation
-    if (formattedPlaylists.length === 0 && categoryType && categoryKeyRaw) {
-      console.log(`🎵 Playlists API: No database playlists found, generating dynamic playlists for ${categoryType}:${categoryKeyRaw}`);
-      return await handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw);
-    }
 
     return res.status(200).json({
       message: 'Playlists retrieved successfully',
@@ -1065,12 +1026,7 @@ async function populatePlaylists(req, res) {
      * This ensures a clean slate for the new therapeutic playlists.
      * Remove these lines if you want to keep existing user-created playlists.
      */
-    console.log('🔄 Playlists API: Clearing existing playlists for fresh population');
-    await prisma.playlistSong.deleteMany({});
-    await prisma.song.deleteMany({});
-    await prisma.playlist.deleteMany({});
-
-    console.log('➕ Playlists API: Creating playlists in database');
+    console.log('➕ Playlists API: Creating playlists in database (non-destructive)');
     console.log('🎵 Playlists API: Playlist data received:', playlistsData.map(p => ({
       title: p.title,
       trackCount: p.tracks?.length || 0
@@ -1232,7 +1188,7 @@ async function handleCategoryPlaylists(req, res, categoryType, categoryKeyRaw) {
     }
 
     const categoryConfig = CATEGORY_CONFIG[categoryType]?.[categoryKey];
-    if (!categoryConfig) {
+  if (!categoryConfig) {
       return res.status(400).json({
         error: `Unknown ${categoryType}: ${categoryKeyRaw}`,
         availableOptions: Object.keys(CATEGORY_CONFIG[categoryType] || {})
