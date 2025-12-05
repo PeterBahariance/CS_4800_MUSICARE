@@ -47,6 +47,10 @@
                 <span class="nav-icon">👥</span>
                 <span class="nav-text">Friends Posts</span>
             </div>
+            <div class="nav-item" data-tab="profile">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Profile</span>
+            </div>
             <div class="nav-item" style="display: none;">
                 <span class="nav-icon">🔔</span>
                 <span class="nav-text"><a href="notif.html" style="text-decoration: none;">Notifications</a></span>
@@ -199,6 +203,70 @@
                 </div>
             </div>
         </div>
+
+        <div id="profile-content" class="content-section" style="display: none;">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h2>Account Settings</h2>
+                    <p>Update your profile information</p>
+                </div>
+
+                <form class="settings-form" id="settings-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" 
+                            placeholder="Your username">
+                        <small>This will be your unique identifier on the platform</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="displayName">Display Name</label>
+                        <input type="text" id="displayName" name="displayName" 
+                            placeholder="Your display name">
+                        <small>This is how others will see you</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" 
+                            disabled 
+                            style="opacity: 0.6; cursor: not-allowed;">
+                        <small>Email cannot be changed for security reasons</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dailyListeningGoal">Daily Listening Goal (minutes)</label>
+                        <input type="number" id="dailyListeningGoal" name="dailyListeningGoal" 
+                            placeholder="30" min="0" max="1440">
+                        <small>Set your daily music listening goal (0-1440 minutes)</small>
+                    </div>                        
+
+                    <div class="form-group">
+                        <label>Health Goals</label>
+                        <div id="profile-health-goals" class="tags-container">
+                            <span class="empty-tag">None set</span>
+                        </div>
+                        <small>Health goals can be set during initial setup</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Music Preferences</label>
+                        <div id="profile-music-preferences" class="tags-container">
+                            <span class="empty-tag">None set</span>
+                        </div>
+                        <small>Music preferences can be set during initial setup</small>
+                    </div>
+
+                    <div class="form-actions">
+                        
+                        <button type="submit" id="save-profile-btn" class="btn-primary">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <!-- Global Music Player -->
@@ -251,6 +319,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Hidden content templates -->
     <div class="content-templates" style="display: none;">
@@ -426,7 +496,10 @@
             chatWidget.classList.toggle("minimized");
             toggleBtn.textContent = chatWidget.classList.contains("minimized") ? "+" : "−";
         });
+
+        
     </script>
+
 
     <!-- User Profile Popup -->
     <div class="popup-overlay" id="user-profile-popup">

@@ -193,6 +193,8 @@ async function getUserData(req, res) {
 async function updateUser(req, res) {
   console.log('🔄 Users API: PATCH request received');
 
+  const { username, displayName, email, healthGoals, musicPreferences, dailyListeningGoal, timezone } = req.body;
+
   // Extract request body data
   const { id, firebaseUid } = req.body;
   console.log('🔄 Users API: Update data -', {
@@ -217,6 +219,17 @@ async function updateUser(req, res) {
 
   try {
     console.log('🔄 Users API: Updating user in database...');
+
+    // Build update data dynamically (only include provided fields)
+    const updateData = { updatedAt: new Date() };
+    
+    if (username !== undefined) updateData.username = username;
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (email !== undefined) updateData.email = email;
+    if (healthGoals !== undefined) updateData.healthGoals = healthGoals;
+    if (musicPreferences !== undefined) updateData.musicPreferences = musicPreferences;
+    if (dailyListeningGoal !== undefined) updateData.dailyListeningGoal = dailyListeningGoal;
+    if (timezone !== undefined) updateData.timezone = timezone;
 
     /**
      * Update user record in database

@@ -34,6 +34,7 @@ import {
 import { firebaseConfig } from '../config/firebase.js';
 import '../features/friends/index.js'; // Import friend system
 import '../features/messages/index.js'; // Import messaging system
+import '../features/profile/index.js'; // Import profile system
 import LibraryView from '../features/music/library.js';
 import { initChat } from '../features/Chatbot/chatbot.js'; // Import chatbot
 
