@@ -286,7 +286,7 @@ class ProfileSettings {
             );
 
             console.log('👤 ProfileSettings: Sending update data:', updateData);
-            /*
+            
             const response = await fetch('/api/users', {
                 method: 'PATCH',
                 headers: { 
@@ -320,7 +320,7 @@ class ProfileSettings {
             setTimeout(() => {
                 this.clearMessages();
             }, 3000);
-            */
+            
 
         } catch (error) {
             console.error('👤 ProfileSettings: Error updating profile:', error);
