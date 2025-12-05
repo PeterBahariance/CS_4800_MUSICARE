@@ -411,6 +411,8 @@ class ProfileSettings {
         const formActions = form.querySelector('.form-actions');
         if (formActions) {
             console.log("Profile: inserted before form-actions div");
+            console.log("Profile: Message div exists: ", messageDiv);
+            console.log("Profile: Form actions div exists: ", formActions);
             // Insert before the form-actions div (above the buttons)
             form.insertBefore(messageDiv, formActions);
         } else {
@@ -426,13 +428,6 @@ class ProfileSettings {
                 form.appendChild(messageDiv);
             }
         } 
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.remove();
-            }
-        }, 5000);
     }
 
     /**
