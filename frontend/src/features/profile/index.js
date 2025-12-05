@@ -153,9 +153,6 @@ class ProfileSettings {
         const saveBtn = document.getElementById('save-profile-btn');
         if (saveBtn) {
             saveBtn.addEventListener('click', (e) => this.handleSubmit(e));
-            form.insertBefore(messageDiv, submitButton.parentNode);
-        } else {
-            form.appendChild(messageDiv);
         }
 
         // Form submit event
@@ -256,7 +253,8 @@ class ProfileSettings {
      */
     async handleSubmit(e) {
         if (e) e.preventDefault();
-        console.log("Submitting");
+        console.log("👤 ProfileSettings: Submitting form");
+        
         if (!this.currentUser?.id) {
             this.showMessage('User not authenticated', 'error');
             return;
@@ -282,6 +280,8 @@ class ProfileSettings {
                 updateData[key] === undefined && delete updateData[key]
             );
             
+            console.log('👤 ProfileSettings: Sending update:', updateData);
+            
             const response = await fetch('/api/users', {
                 method: 'PATCH',
                 headers: { 
@@ -292,6 +292,7 @@ class ProfileSettings {
             });
 
             const responseData = await response.json();
+            console.log('👤 ProfileSettings: API response:', responseData);
 
             if (!response.ok) {
                 throw new Error(responseData.error || responseData.details || 'Failed to update profile');
@@ -311,10 +312,10 @@ class ProfileSettings {
             // Update form with new data
             this.populateFormFields();
 
-            // Clear success message after 3 seconds
+            // Clear success message after 5 seconds
             setTimeout(() => {
                 this.clearMessages();
-            }, 3000);
+            }, 5000);
             
 
         } catch (error) {
@@ -343,7 +344,6 @@ class ProfileSettings {
             saveBtn.textContent = value ? 'Saving...' : 'Save Changes';
         }
 
-        
         // Disable all form inputs while submitting
         const form = document.getElementById('settings-form');
         if (form) {
@@ -366,14 +366,36 @@ class ProfileSettings {
      * @param {string} type - Message type: 'success', 'error'
      */
     showMessage(message, type = 'info') {
+        console.log('👤 ProfileSettings: Showing message:', { message, type });
+        
         this.clearMessages();
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
         
-        // Add CSS classes instead of inline styles
-        messageDiv.classList.add('profile-message', type);
+        // Add inline styles for immediate visibility
+        messageDiv.style.cssText = `
+            padding: 12px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        if (type === 'success') {
+            messageDiv.style.background = 'rgba(34, 197, 94, 0.1)';
+            messageDiv.style.color = '#16a34a';
+            messageDiv.style.border = '1px solid #86efac';
+        } else if (type === 'error') {
+            messageDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+            messageDiv.style.color = '#dc2626';
+            messageDiv.style.border = '1px solid #fca5a5';
+        } else {
+            messageDiv.style.background = 'rgba(59, 130, 246, 0.1)';
+            messageDiv.style.color = '#2563eb';
+            messageDiv.style.border = '1px solid #93c5fd';
+        }
         
         const form = document.getElementById('settings-form');
         if (!form) {
@@ -382,12 +404,21 @@ class ProfileSettings {
             return;
         }
         
-        // Find a safe place to insert - at the beginning of the form
-        const firstChild = form.firstElementChild;
-        if (firstChild) {
-            form.insertBefore(messageDiv, firstChild);
+        // Find the form-actions div (where buttons are)
+        const formActions = form.querySelector('.form-actions');
+        if (formActions) {
+            // Insert before the form-actions div (above the buttons)
+            form.insertBefore(messageDiv, formActions);
         } else {
-            form.appendChild(messageDiv);
+            // Find any button in the form
+            const buttons = form.querySelectorAll('button');
+            if (buttons.length > 0) {
+                // Insert before the first button
+                form.insertBefore(messageDiv, buttons[0]);
+            } else {
+                // Last resort: append to form
+                form.appendChild(messageDiv);
+            }
         }
         
         // Auto-remove after 5 seconds
