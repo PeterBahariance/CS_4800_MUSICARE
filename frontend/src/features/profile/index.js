@@ -414,7 +414,7 @@ class ProfileSettings {
             console.log("Profile: Message div exists: ", messageDiv);
             console.log("Profile: Form actions div exists: ", formActions);
             // Insert before the form-actions div (above the buttons)
-            form.insertBefore(messageDiv, formActions);
+            form.insertBefore(messageDiv, formActions.firstChild);
         } else {
             // Find any button in the form
             const buttons = form.querySelectorAll('button');
