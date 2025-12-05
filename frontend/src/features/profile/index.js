@@ -400,7 +400,7 @@ class ProfileSettings {
             messageDiv.style.border = '1px solid #93c5fd';
         }
         
-        const form = document.getElementById('settings-form');
+        const form = document.getElementById('settings-form').parentNode;
         if (!form) {
             console.warn('👤 ProfileSettings: Form not found, showing alert instead');
             alert(`${type.toUpperCase()}: ${message}`);
