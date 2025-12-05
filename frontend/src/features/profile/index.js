@@ -409,12 +409,14 @@ class ProfileSettings {
         if (formActions) {
             // Insert before the form-actions div (above the buttons)
             form.insertBefore(messageDiv, formActions);
+            console.log("Profile: inserted before form-actions div");
         } else {
             // Find any button in the form
             const buttons = form.querySelectorAll('button');
             if (buttons.length > 0) {
                 // Insert before the first button
                 form.insertBefore(messageDiv, buttons[0]);
+                console.log("Profile: inserted before button");
             } else {
                 // Last resort: append to form
                 form.appendChild(messageDiv);
