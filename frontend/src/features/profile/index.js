@@ -407,21 +407,22 @@ class ProfileSettings {
         // Find the form-actions div (where buttons are)
         const formActions = form.querySelector('.form-actions');
         if (formActions) {
+            console.log("Profile: inserted before form-actions div");
             // Insert before the form-actions div (above the buttons)
             form.insertBefore(messageDiv, formActions);
-            console.log("Profile: inserted before form-actions div");
         } else {
             // Find any button in the form
             const buttons = form.querySelectorAll('button');
             if (buttons.length > 0) {
+                console.log("Profile: inserted before button");
                 // Insert before the first button
                 form.insertBefore(messageDiv, buttons[0]);
-                console.log("Profile: inserted before button");
             } else {
+                console.log("Profile: cannot find buttons nor form actions");
                 // Last resort: append to form
                 form.appendChild(messageDiv);
             }
-        }
+        } 
         
         // Auto-remove after 5 seconds
         setTimeout(() => {
