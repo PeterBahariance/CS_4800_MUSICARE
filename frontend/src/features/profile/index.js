@@ -153,18 +153,15 @@ class ProfileSettings {
         const saveBtn = document.getElementById('save-profile-btn');
         if (saveBtn) {
             saveBtn.addEventListener('click', (e) => this.handleSubmit(e));
+            form.insertBefore(messageDiv, submitButton.parentNode);
+        } else {
+            form.appendChild(messageDiv);
         }
 
         // Form submit event
         const settingsForm = document.getElementById('settings-form');
         if (settingsForm) {
             settingsForm.addEventListener('submit', (e) => this.handleSubmit(e));
-        }
-
-        // Reset form button
-        const resetBtn = document.getElementById('reset-profile-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.loadProfileData());
         }
     }
 
