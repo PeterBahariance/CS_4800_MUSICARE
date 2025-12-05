@@ -369,8 +369,11 @@ class ProfileSettings {
         console.log('👤 ProfileSettings: Showing message:', { message, type });
         
         this.clearMessages();
-        
+        console.log('Profile: creating messageDiv');
         const messageDiv = document.createElement('div');
+        if (messageDiv) {
+            console.log('Profile: message div made');
+        }
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
         
