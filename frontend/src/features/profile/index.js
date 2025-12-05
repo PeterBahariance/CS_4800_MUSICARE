@@ -284,8 +284,6 @@ class ProfileSettings {
             Object.keys(updateData).forEach(key => 
                 updateData[key] === undefined && delete updateData[key]
             );
-
-            console.log('👤 ProfileSettings: Sending update data:', updateData);
             
             const response = await fetch('/api/users', {
                 method: 'PATCH',
@@ -376,32 +374,31 @@ class ProfileSettings {
         const messageDiv = document.createElement('div');
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
-        messageDiv.style.cssText = `
-            padding: 12px;
-            border-radius: 6px;
-            margin: 15px 0;
-            font-weight: 500;
-            animation: fadeIn 0.3s ease;
-        `;
         
-        if (type === 'success') {
-            messageDiv.style.background = 'rgba(34, 197, 94, 0.1)';
-            messageDiv.style.color = '#16a34a';
-            messageDiv.style.border = '1px solid #86efac';
-        } else if (type === 'error') {
-            messageDiv.style.background = 'rgba(239, 68, 68, 0.1)';
-            messageDiv.style.color = '#dc2626';
-            messageDiv.style.border = '1px solid #fca5a5';
-        } else {
-            messageDiv.style.background = 'rgba(59, 130, 246, 0.1)';
-            messageDiv.style.color = '#2563eb';
-            messageDiv.style.border = '1px solid #93c5fd';
-        }
+        // Add CSS classes instead of inline styles
+        messageDiv.classList.add('profile-message', type);
         
         const form = document.getElementById('settings-form');
-        if (form) {
-            form.insertBefore(messageDiv, form.querySelector('button[type="submit"]'));
+        if (!form) {
+            console.warn('👤 ProfileSettings: Form not found, showing alert instead');
+            alert(`${type.toUpperCase()}: ${message}`);
+            return;
         }
+        
+        // Find a safe place to insert - at the beginning of the form
+        const firstChild = form.firstElementChild;
+        if (firstChild) {
+            form.insertBefore(messageDiv, firstChild);
+        } else {
+            form.appendChild(messageDiv);
+        }
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.remove();
+            }
+        }, 5000);
     }
 
     /**
