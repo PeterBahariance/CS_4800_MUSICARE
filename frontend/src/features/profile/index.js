@@ -370,9 +370,9 @@ class ProfileSettings {
         
         this.clearMessages();
         console.log('Profile: creating messageDiv');
-        const messageDiv = document.createElement('div');
+        const messageDiv = document.querySelector('message-div');
         if (messageDiv) {
-            console.log('Profile: message div made');
+            console.log('Profile: got message div');
         }
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
@@ -400,7 +400,7 @@ class ProfileSettings {
             messageDiv.style.border = '1px solid #93c5fd';
         }
         
-        const form = document.getElementById('settings-form').parentNode;
+        const form = document.getElementById('settings-form');
         if (!form) {
             console.warn('👤 ProfileSettings: Form not found, showing alert instead');
             alert(`${type.toUpperCase()}: ${message}`);
@@ -428,6 +428,7 @@ class ProfileSettings {
                 form.appendChild(messageDiv);
             }
         } 
+        
     }
 
     /**
