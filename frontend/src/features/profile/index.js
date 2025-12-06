@@ -370,9 +370,9 @@ class ProfileSettings {
         
         this.clearMessages();
         console.log('Profile: creating messageDiv');
-        const messageDiv = document.querySelector('message-div');
+        const messageDiv = document.createElement('div');
         if (messageDiv) {
-            console.log('Profile: got message div');
+            console.log('Profile: message div made');
         }
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
@@ -414,7 +414,7 @@ class ProfileSettings {
             console.log("Profile: Message div exists: ", messageDiv);
             console.log("Profile: Form actions div exists: ", formActions);
             // Insert before the form-actions div (above the buttons)
-            form.insertBefore(messageDiv, formActions.firstChild);
+            form.insertBefore(messageDiv, formActions);
         } else {
             // Find any button in the form
             const buttons = form.querySelectorAll('button');
@@ -428,7 +428,6 @@ class ProfileSettings {
                 form.appendChild(messageDiv);
             }
         } 
-        
     }
 
     /**
