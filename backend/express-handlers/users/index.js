@@ -165,39 +165,67 @@ async function getUserData(req, res) {
 /**
  * PATCH Request Handler - Update User Profile
  *
- * Updates existing user information in the database. Currently supports
- * updating Firebase UID for linking authentication accounts.
+ * Updates existing user information in the database. Supports updating
+ * multiple profile fields including username, displayName, health goals,
+ * music preferences, and more.
  *
  * @async
  * @function updateUser
  * @param {Object} req - Express request object
  * @param {string} req.body.id - User's database ID (required)
  * @param {string} req.body.firebaseUid - Firebase authentication UID (optional)
+ * @param {string} req.body.username - Unique username (optional)
+ * @param {string} req.body.displayName - User's display name (optional)
+ * @param {string[]} req.body.healthGoals - Array of health goals (optional)
+ * @param {string[]} req.body.musicPreferences - Array of music preferences (optional)
+ * @param {number} req.body.dailyListeningGoal - Daily listening goal in minutes (optional)
+ * @param {string} req.body.timezone - User's timezone (optional)
+ * @param {boolean} req.body.emailVerified - Email verification status (optional)
  * @param {Object} res - Express response object
  * @returns {Promise<Object>} JSON response with updated user data
  *
- * @throws {Error} 400 - Missing required parameters
- * @throws {Error} 404 - User not found (handled by Prisma)
- * @throws {Error} 409 - Firebase UID already in use
+ * @throws {Error} 400 - Missing required parameters or validation error
+ * @throws {Error} 404 - User not found
+ * @throws {Error} 409 - Conflict (username already taken, etc.)
  * @throws {Error} 500 - Database or server error
  *
  * @example
  * PATCH /api/users
  * {
  *   "id": "user-uuid-123",
- *   "firebaseUid": "firebase-uid-456"
+ *   "username": "newusername",
+ *   "displayName": "New Display Name",
+ *   "healthGoals": ["stress_relief", "focus"],
+ *   "musicPreferences": ["classical", "jazz"],
+ *   "dailyListeningGoal": 45,
+ *   "timezone": "America/Los_Angeles"
  * }
- *
- * @todo Expand to support updating health goals, music preferences, and other profile fields
  */
 async function updateUser(req, res) {
   console.log('🔄 Users API: PATCH request received');
 
   // Extract request body data
-  const { id, firebaseUid } = req.body;
+  const {
+    id,
+    firebaseUid,
+    username,
+    displayName,
+    healthGoals,
+    musicPreferences,
+    dailyListeningGoal,
+    timezone,
+    emailVerified
+  } = req.body;
+
   console.log('🔄 Users API: Update data -', {
     id: id ? id.substring(0, 8) + '...' : 'not provided',
-    firebaseUid: firebaseUid ? firebaseUid.substring(0, 8) + '...' : 'not provided'
+    username: username || 'not provided',
+    displayName: displayName || 'not provided',
+    healthGoals: healthGoals?.length || 'not provided',
+    musicPreferences: musicPreferences?.length || 'not provided',
+    dailyListeningGoal: dailyListeningGoal !== undefined ? dailyListeningGoal : 'not provided',
+    timezone: timezone || 'not provided',
+    emailVerified: emailVerified !== undefined ? emailVerified : 'not provided'
   });
 
   /**
@@ -215,22 +243,78 @@ async function updateUser(req, res) {
     });
   }
 
+  /**
+   * Validate dailyListeningGoal if provided
+   *
+   * Ensure it's a positive number (if provided)
+   */
+  if (dailyListeningGoal !== undefined) {
+    if (typeof dailyListeningGoal !== 'number' || dailyListeningGoal < 0) {
+      return res.status(400).json({
+        error: 'Invalid daily listening goal',
+        details: 'Daily listening goal must be a positive number',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
   try {
-    console.log('🔄 Users API: Updating user in database...');
+    /**
+     * Check username uniqueness if username is being updated
+     *
+     * We need to ensure the new username isn't already taken by another user
+     */
+    if (username) {
+      console.log('🔍 Users API: Checking username availability...');
+      
+      // Find user with the requested username
+      const existingUserWithUsername = await prisma.user.findUnique({
+        where: { username }
+      });
+
+      // If username is taken by a different user, return error
+      if (existingUserWithUsername && existingUserWithUsername.id !== id) {
+        console.log('🚨 Users API: Username already taken by another user');
+        return res.status(409).json({
+          error: 'Username already taken',
+          details: 'Please choose a different username',
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    /**
+     * Prepare update data object
+     *
+     * Only include fields that were actually provided in the request.
+     * This allows partial updates without affecting unspecified fields.
+     */
+    const updateData = {
+      updatedAt: new Date() // Always update timestamp
+    };
+
+    // Conditionally add fields to updateData if they were provided
+    if (firebaseUid !== undefined) updateData.firebaseUid = firebaseUid;
+    if (username !== undefined) updateData.username = username;
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (healthGoals !== undefined) updateData.healthGoals = healthGoals;
+    if (musicPreferences !== undefined) updateData.musicPreferences = musicPreferences;
+    if (dailyListeningGoal !== undefined) updateData.dailyListeningGoal = dailyListeningGoal;
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (emailVerified !== undefined) updateData.emailVerified = emailVerified;
+
+    console.log('🔄 Users API: Prepared update data -', Object.keys(updateData));
 
     /**
      * Update user record in database
      *
-     * Uses Prisma's update method with conditional data assignment.
-     * The `|| undefined` pattern ensures we don't set fields to null
-     * if they weren't provided in the request.
+     * Uses Prisma's update method with the prepared data object.
+     * Returns the complete updated user object for confirmation.
      */
+    console.log('🔄 Users API: Updating user in database...');
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        firebaseUid: firebaseUid || undefined,
-        updatedAt: new Date() // Explicitly update timestamp
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -251,6 +335,7 @@ async function updateUser(req, res) {
     return res.status(200).json({
       message: 'User updated successfully',
       user: updatedUser,
+      updatedFields: Object.keys(updateData).filter(key => key !== 'updatedAt'),
       timestamp: new Date().toISOString()
     });
 
@@ -261,7 +346,7 @@ async function updateUser(req, res) {
      * Handle specific Prisma errors
      *
      * P2025: Record not found - user with provided ID doesn't exist
-     * P2002: Unique constraint violation - duplicate firebaseUid
+     * P2002: Unique constraint violation - duplicate firebaseUid or username
      */
     if (error.code === 'P2025') {
       return res.status(404).json({
@@ -272,9 +357,11 @@ async function updateUser(req, res) {
     }
 
     if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0] || 'field';
+      const fieldName = field === 'username' ? 'Username' : 'Firebase UID';
       return res.status(409).json({
-        error: 'Firebase UID already in use',
-        details: 'Another user is already linked to this Firebase account',
+        error: `${fieldName} already in use`,
+        details: `Another user is already using this ${fieldName.toLowerCase()}`,
         timestamp: new Date().toISOString()
       });
     }

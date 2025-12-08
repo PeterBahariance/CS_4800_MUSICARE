@@ -17,7 +17,8 @@
             <div id="user-info"
                 style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
                 <div>Signed in as:</div>
-                <div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
+                <!--<div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>-->
+                <div id="user-name" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
             </div>
     
             <div class="github-link">
@@ -48,7 +49,7 @@
                 <span class="nav-text">Friends Posts</span>
             </div>
             <div class="nav-item" data-tab="profile">
-                <span class="nav-icon">👥</span>
+                <span class="nav-icon">🪪</span>
                 <span class="nav-text">Profile</span>
             </div>
             <div class="nav-item" style="display: none;">
@@ -379,23 +380,58 @@
             apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
         });
 
+        // Import the user profile service
+        import userProfileService from '../src/features/profile/userProfile.js';
+
         // Update UI based on auth state
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             const userInfo = document.getElementById('user-info');
-            const userEmail = document.getElementById('user-email');
+            const userName = document.getElementById('user-name');
+
+            // Function to update username display
+            const updateUsernameDisplay = () => {
+                if (user) {
+                    const maskedName = userProfileService.getMaskedDisplayName();
+                    userName.textContent = maskedName;
+                    userInfo.style.display = 'block';
+                }
+            };
 
             if (user) {
-                // Show only first 3 characters
-                const masked = email.length > 3
-                    ? email.slice(0, 3) + "***"
-                    : email;
-                
-                // User is signed in
-                userEmail.textContent = masked;
-                userInfo.style.display = 'block';
+                try {
+                    // Load user profile
+                    const params = new URLSearchParams();
+                    if (user.email) params.append('email', user.email);
+                    if (user.uid) params.append('firebaseUid', user.uid);
+                    
+                    const response = await fetch(`/api/users?${params.toString()}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const userProfile = data.user || data;
+                        
+                        // Set profile in service
+                        userProfileService.setProfile(userProfile);
+                        
+                        // Update display
+                        updateUsernameDisplay();
+                        
+                        // Listen for future updates
+                        userProfileService.addListener(updateUsernameDisplay);
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                    // Fallback
+                    if (user?.email) {
+                        const masked = user.email.split('@')[0]?.slice(0, 3) + "***";
+                        userName.textContent = masked;
+                        userInfo.style.display = 'block';
+                    }
+                }
             } else {
                 // User is signed out
                 userInfo.style.display = 'none';
+                userProfileService.setProfile(null);
+                userProfileService.removeListener(updateUsernameDisplay);
             }
         });
 

@@ -21,6 +21,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { firebaseConfig } from '../../config/firebase.js';
+import userProfileService from './userProfile.js';
 
 /**
  * Firebase Application Instance
@@ -117,22 +118,39 @@ class ProfileSettings {
         try {
             console.log('👤 ProfileSettings: Fetching user data for UID:', firebaseUid);
             let response = await fetch(`/api/users?firebaseUid=${firebaseUid}`);
-
+            
+            if (response.status === 404) {
+                // User not found in database - this might be normal for new users
+                console.log('👤 ProfileSettings: User not found in database (might be new user)');
+                return null;
+            }
+            
             if (!response.ok) {
                 // Fallback: search by email
                 const currentUser = auth.currentUser;
                 if (currentUser && currentUser.email) {
                     console.log('👤 ProfileSettings: Trying fallback search by email');
                     response = await fetch(`/api/users?email=${encodeURIComponent(currentUser.email)}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.user || data;
-                    }
                 }
             }
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
-            return data.user || data;
+            
+            // Handle both response formats: { user: {...} } or direct user object
+            if (data.user) {
+                console.log('👤 ProfileSettings: User data found (nested format)');
+                return data.user;
+            } else if (data.id) {
+                console.log('👤 ProfileSettings: User data found (direct format)');
+                return data;
+            } else {
+                console.warn('👤 ProfileSettings: Unexpected response format:', data);
+                return null;
+            }
         } catch (error) {
             console.error('👤 ProfileSettings: Error fetching user data:', error);
             return null;
@@ -264,16 +282,27 @@ class ProfileSettings {
         this.clearMessages();
 
         try {
-            const formData = new FormData(document.getElementById('settings-form'));
-
+            // Get form values directly from input elements
+            const form = document.getElementById('settings-form');
             const updateData = {
                 id: this.currentUser.id,
-                username: formData.get('username') || undefined,
-                displayName: formData.get('displayName') || undefined,
-                dailyListeningGoal: formData.get('dailyListeningGoal') 
-                    ? parseInt(formData.get('dailyListeningGoal')) 
-                    : undefined,
+                username: document.getElementById('username')?.value || undefined,
+                displayName: document.getElementById('displayName')?.value || undefined,
+                timezone: document.getElementById('timezone')?.value || undefined,
             };
+
+            // Parse dailyListeningGoal as integer (or undefined if empty)
+            const dailyGoalInput = document.getElementById('dailyListeningGoal')?.value;
+            if (dailyGoalInput && dailyGoalInput.trim() !== '') {
+                const parsed = parseInt(dailyGoalInput, 10);
+                if (!isNaN(parsed) && parsed >= 0) {
+                    updateData.dailyListeningGoal = parsed;
+                } else {
+                    this.showMessage('Daily listening goal must be a valid positive number', 'error');
+                    this.setSubmitting(false);
+                    return;
+                }
+            }
 
             // Remove undefined values
             Object.keys(updateData).forEach(key => 
@@ -281,6 +310,13 @@ class ProfileSettings {
             );
             
             console.log('👤 ProfileSettings: Sending update:', updateData);
+            
+            // Check if we actually have data to update
+            if (Object.keys(updateData).length <= 1) { // Only has id
+                this.showMessage('No changes to save', 'info');
+                this.setSubmitting(false);
+                return;
+            }
             
             const response = await fetch('/api/users', {
                 method: 'PATCH',
@@ -292,21 +328,44 @@ class ProfileSettings {
             });
 
             const responseData = await response.json();
-            console.log('👤 ProfileSettings: API response:', responseData);
+            console.log('👤 ProfileSettings: API response status:', response.status);
+            console.log('👤 ProfileSettings: API response data:', responseData);
 
             if (!response.ok) {
-                throw new Error(responseData.error || responseData.details || 'Failed to update profile');
+                // Handle specific error codes
+                if (response.status === 409) {
+                    throw new Error(responseData.details || 'This username is already taken. Please choose another one.');
+                } else if (response.status === 404) {
+                    throw new Error('User not found. Please log in again.');
+                } else if (response.status === 400) {
+                    throw new Error(responseData.details || 'Invalid data provided.');
+                } else {
+                    throw new Error(responseData.error || responseData.details || `Failed to update profile (${response.status})`);
+                }
+            }
+
+            // Handle response data - check both possible structures
+            let updatedUser;
+            if (responseData.user) {
+                updatedUser = responseData.user;
+            } else if (responseData.id) {
+                updatedUser = responseData;
+            } else {
+                throw new Error('Invalid response format from server');
             }
 
             // Update local user data
-            this.currentUser = responseData.user;
+            this.currentUser = updatedUser;
             
             // Show success message
             this.showMessage('Profile updated successfully!', 'success');
+
+            // Update user profile display
+            userProfileService.updateProfile(responseData.user);
             
             // Dispatch event for other parts of the app
             window.dispatchEvent(new CustomEvent('musicare:profile-updated', {
-                detail: responseData.user
+                detail: updatedUser
             }));
 
             // Update form with new data
@@ -369,11 +428,7 @@ class ProfileSettings {
         console.log('👤 ProfileSettings: Showing message:', { message, type });
         
         this.clearMessages();
-        console.log('Profile: creating messageDiv');
         const messageDiv = document.createElement('div');
-        if (messageDiv) {
-            console.log('Profile: message div made');
-        }
         messageDiv.className = `profile-message ${type}`;
         messageDiv.textContent = message;
         
@@ -410,20 +465,15 @@ class ProfileSettings {
         // Find the form-actions div (where buttons are)
         const formActions = form.querySelector('.form-actions');
         if (formActions) {
-            console.log("Profile: inserted before form-actions div");
-            console.log("Profile: Message div exists: ", messageDiv);
-            console.log("Profile: Form actions div exists: ", formActions);
             // Insert before the form-actions div (above the buttons)
             form.insertBefore(messageDiv, formActions);
         } else {
             // Find any button in the form
             const buttons = form.querySelectorAll('button');
             if (buttons.length > 0) {
-                console.log("Profile: inserted before button");
                 // Insert before the first button
                 form.insertBefore(messageDiv, buttons[0]);
             } else {
-                console.log("Profile: cannot find buttons nor form actions");
                 // Last resort: append to form
                 form.appendChild(messageDiv);
             }

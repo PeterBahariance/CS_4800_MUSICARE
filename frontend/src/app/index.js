@@ -59,6 +59,7 @@ const auth = getAuth(app);
  */
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
+const userName = document.getElementById('user-name');
 const signOutBtn = document.getElementById('sign-out-btn');
 
 /**
@@ -72,16 +73,26 @@ const signOutBtn = document.getElementById('sign-out-btn');
  * @listens onAuthStateChanged
  * @param {User|null} user - Firebase user object or null if not authenticated
  */
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         // User is authenticated - show user info and bootstrap profile
         userInfo.style.display = 'block';
-        userEmail.textContent = user.email;
-
+        
+        // First load the user profile from our database
+        const userProfile = await loadUserProfile(user);
+        
+        // Display username if available, otherwise use displayName or email
+        const displayName = userProfile?.username || 
+                          userProfile?.displayName || 
+                          user.email?.split('@')[0] || 
+                          'User';
+        
+        userName.textContent = displayName;
+        
         // Set up sign out button
         signOutBtn.addEventListener('click', handleSignOut);
-
-        // Load user profile from database
+        
+        // Bootstrap the rest of the user profile
         bootstrapUserProfile(user);
     } else {
         // User is not authenticated - redirect to login page
@@ -349,8 +360,9 @@ function logUserProfile(profile) {
 
     console.groupCollapsed('🎧 Musicare user profile loaded');
     console.log('User ID:', profile.id);
+    console.log('Username:', profile.username || '(not set)');
     console.log('Email:', profile.email);
-    console.log('Display Name:', profile.displayName);
+    console.log('Display Name:', profile.displayName || '(not set)');
     console.log('Health Goals:', profile.healthGoals?.length ? profile.healthGoals : '(none)');
     console.log('Music Preferences:', profile.musicPreferences?.length ? profile.musicPreferences : '(none)');
     console.log('Daily Listening Goal:', profile.dailyListeningGoal ?? '(unset)');
