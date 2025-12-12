@@ -34,6 +34,7 @@ import {
 import { firebaseConfig } from '../config/firebase.js';
 import '../features/friends/index.js'; // Import friend system
 import '../features/messages/index.js'; // Import messaging system
+import '../features/profile/index.js'; // Import profile system
 import LibraryView from '../features/music/library.js';
 import { initChat } from '../features/Chatbot/chatbot.js'; // Import chatbot
 
@@ -58,6 +59,7 @@ const auth = getAuth(app);
  */
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
+const userName = document.getElementById('user-name');
 const signOutBtn = document.getElementById('sign-out-btn');
 
 /**
@@ -71,16 +73,26 @@ const signOutBtn = document.getElementById('sign-out-btn');
  * @listens onAuthStateChanged
  * @param {User|null} user - Firebase user object or null if not authenticated
  */
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         // User is authenticated - show user info and bootstrap profile
         userInfo.style.display = 'block';
-        userEmail.textContent = user.email;
-
+        
+        // First load the user profile from our database
+        const userProfile = await loadUserProfile(user);
+        
+        // Display username if available, otherwise use displayName or email
+        const displayName = userProfile?.username || 
+                          userProfile?.displayName || 
+                          user.email?.split('@')[0] || 
+                          'User';
+        
+        userName.textContent = displayName;
+        
         // Set up sign out button
         signOutBtn.addEventListener('click', handleSignOut);
-
-        // Load user profile from database
+        
+        // Bootstrap the rest of the user profile
         bootstrapUserProfile(user);
     } else {
         // User is not authenticated - redirect to login page
@@ -348,8 +360,9 @@ function logUserProfile(profile) {
 
     console.groupCollapsed('🎧 Musicare user profile loaded');
     console.log('User ID:', profile.id);
+    console.log('Username:', profile.username || '(not set)');
     console.log('Email:', profile.email);
-    console.log('Display Name:', profile.displayName);
+    console.log('Display Name:', profile.displayName || '(not set)');
     console.log('Health Goals:', profile.healthGoals?.length ? profile.healthGoals : '(none)');
     console.log('Music Preferences:', profile.musicPreferences?.length ? profile.musicPreferences : '(none)');
     console.log('Daily Listening Goal:', profile.dailyListeningGoal ?? '(unset)');
@@ -370,3 +383,160 @@ initChat({
 });
 console.log('✅ Chatbot initialized successfully');
 
+/**
+ * Profile Update Handler
+ *
+ * Listens for profile updates and refreshes the UI across all components.
+ * This ensures the sidebar, messages, and posts reflect the updated user info.
+ *
+ * @listens musicare:profile-updated
+ */
+window.addEventListener('musicare:profile-updated', (event) => {
+    const updatedProfile = event.detail;
+    console.log('🔄 Profile updated, refreshing UI...', updatedProfile);
+    
+    if (!updatedProfile) return;
+    
+    // Update the global user context
+    if (window.musicareUserContext) {
+        window.musicareUserContext = {
+            ...window.musicareUserContext,
+            ...updatedProfile
+        };
+    }
+    
+    // Update sidebar display name
+    const userNameElement = document.getElementById('user-name');
+    if (userNameElement) {
+        const displayName = updatedProfile.username || 
+                          updatedProfile.displayName || 
+                          updatedProfile.email?.split('@')[0] || 
+                          'User';
+        userNameElement.textContent = displayName;
+    }
+    
+    // Dispatch event for other modules to refresh their data
+    document.dispatchEvent(new CustomEvent('musicare:user-context-updated', {
+        detail: updatedProfile
+    }));
+    
+    console.log('✅ UI refreshed with updated profile');
+});
+
+/**
+ * Mobile Navigation System
+ *
+ * Handles hamburger menu toggle and mobile sidebar navigation.
+ * Includes overlay click handling and escape key support.
+ */
+
+/**
+ * Initialize Mobile Menu
+ *
+ * Sets up event listeners for mobile navigation toggle.
+ *
+ * @function initMobileMenu
+ */
+function initMobileMenu() {
+    const menuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (!menuToggle || !sidebar || !overlay) {
+        console.warn('📱 Mobile menu elements not found');
+        return;
+    }
+
+    /**
+     * Toggle Mobile Sidebar
+     *
+     * Opens or closes the mobile sidebar with animation.
+     *
+     * @function toggleMobileSidebar
+     * @param {boolean} [forceClose=false] - Force close the sidebar
+     */
+    function toggleMobileSidebar(forceClose = false) {
+        const isOpen = sidebar.classList.contains('open');
+        
+        if (forceClose || isOpen) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            menuToggle.classList.remove('active');
+            document.body.style.overflow = '';
+        } else {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            menuToggle.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    // Toggle button click
+    menuToggle.addEventListener('click', () => toggleMobileSidebar());
+
+    // Overlay click closes sidebar
+    overlay.addEventListener('click', () => toggleMobileSidebar(true));
+
+    // Close sidebar when nav item is clicked (on mobile)
+    const navItems = sidebar.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                toggleMobileSidebar(true);
+            }
+        });
+    });
+
+    // Close sidebar on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+            toggleMobileSidebar(true);
+        }
+    });
+
+    // Close sidebar on window resize if going to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && sidebar.classList.contains('open')) {
+            toggleMobileSidebar(true);
+        }
+    });
+
+    console.log('📱 Mobile menu initialized');
+}
+
+/**
+ * Initialize Messages Mobile Toggle
+ *
+ * Sets up click handler on chat header to toggle friends sidebar in messages view.
+ *
+ * @function initMessagesMobileToggle
+ */
+function initMessagesMobileToggle() {
+    const chatHeader = document.querySelector('.chat-header');
+    const friendsSidebar = document.querySelector('.messages-layout .friends-sidebar');
+    
+    if (!chatHeader || !friendsSidebar) {
+        return;
+    }
+
+    chatHeader.addEventListener('click', (e) => {
+        // Only trigger on mobile and when clicking the header area (not buttons inside)
+        if (window.innerWidth <= 768 && e.target.closest('.chat-header')) {
+            friendsSidebar.classList.toggle('mobile-open');
+        }
+    });
+
+    // Close friends sidebar when a friend is selected
+    const friendsChatList = document.getElementById('friends-chat-list');
+    if (friendsChatList) {
+        friendsChatList.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                friendsSidebar.classList.remove('mobile-open');
+            }
+        });
+    }
+}
+
+// Initialize mobile features
+initMobileMenu();
+initMessagesMobileToggle();

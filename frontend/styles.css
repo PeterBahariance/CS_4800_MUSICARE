@@ -3490,16 +3490,807 @@ body.modal-open {
   animation: fadeIn 220ms ease;
 }
 
-
+/* Email */
 
 /* Default style for larger screens */
-#user-email {
+#user-email, #user-name {
   display: block;
 }
 
 /* Styles for smaller screens (e.g., smartphones) */
 @media screen and (max-width: 600px) {
-  #user-email {
+  #user-email, #user-name {
     display: none;
   }
+}
+
+/* Profile */
+.settings-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.settings-header {
+    margin-bottom: 30px;
+}
+
+.settings-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+    color: #2c3e50;
+}
+
+.settings-header p {
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-group small {
+    margin-top: 4px;
+    color: #95a5a6;
+    font-size: 12px;
+}
+
+.error-message {
+    padding: 12px;
+    background-color: #ffebee;
+    color: #c62828;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.success-message {
+    padding: 12px;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-primary {
+    padding: 12px 24px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Profile Messages */
+.profile-message {
+    padding: 12px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+.profile-message.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+.profile-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.profile-message.info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Profile tags */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-height: 48px;
+}
+
+.profile-tag {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.empty-tag {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   COMPREHENSIVE MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    width: 44px;
+    height: 44px;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 10px;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background: var(--primary-dark);
+}
+
+.hamburger-line {
+    width: 24px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* Hamburger animation when open */
+.mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(6px, 6px);
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+    opacity: 1;
+}
+
+/* ============================================
+   MOBILE BREAKPOINT: 768px and below
+   ============================================ */
+@media (max-width: 768px) {
+    /* Show mobile menu toggle */
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    /* Show mobile overlay when sidebar is open */
+    .mobile-overlay.active {
+        display: block;
+    }
+
+    /* Sidebar - hidden by default on mobile */
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* Show full sidebar content when open */
+    .sidebar.open .sidebar-header h3,
+    .sidebar.open .nav-text {
+        display: block;
+    }
+
+    .sidebar.open .nav-item {
+        justify-content: flex-start;
+        padding: 15px 20px;
+    }
+
+    .sidebar.open .nav-icon {
+        margin-right: 12px;
+    }
+
+    /* Main content - full width on mobile */
+    .main-content {
+        margin-left: 0;
+        padding: 70px 15px 150px 15px;
+        width: 100%;
+    }
+
+    /* Content sections */
+    .content-section {
+        padding: 20px 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+    }
+
+    /* Hero section */
+    .home-hero {
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .hero-text-block h1 {
+        font-size: 1.8rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .hero-actions {
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* Playlists */
+    .playlists-container {
+        padding: 0;
+    }
+
+    .playlists-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .playlists-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .playlist-card {
+        margin-bottom: 15px;
+    }
+
+    .playlist-cover {
+        height: 150px;
+    }
+
+    /* Music player - compact mobile version */
+    .global-player-container {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .music-player {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .player-track-info {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .track-cover {
+        width: 40px;
+        height: 40px;
+    }
+
+    .current-track-name {
+        font-size: 0.85rem;
+    }
+
+    .current-track-artist {
+        font-size: 0.7rem;
+    }
+
+    .player-controls {
+        gap: 8px;
+    }
+
+    .play-pause {
+        width: 36px;
+        height: 36px;
+    }
+
+    .player-progress {
+        width: 100%;
+        max-width: none;
+    }
+
+    .player-volume {
+        display: none; /* Hide volume on mobile - use device volume */
+    }
+
+    /* Friend search bar */
+    .friend-search-bar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .search-section {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .search-input-container input {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    .notifications-section,
+    .friends-section {
+        width: auto;
+    }
+
+    /* Profile/Settings */
+    .settings-container {
+        padding: 15px;
+    }
+
+    .settings-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+    }
+
+    /* Popups/Modals */
+    .popup-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 10px;
+    }
+
+    .popup-header {
+        padding: 15px;
+    }
+
+    .popup-body {
+        padding: 15px;
+    }
+
+    /* User profile popup */
+    .user-profile-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .profile-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .profile-actions button {
+        width: 100%;
+    }
+
+    /* Friend items */
+    .friend-request-item,
+    .friend-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .friend-request-actions,
+    .friend-actions {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Chat widget */
+    #chat-widget {
+        width: calc(100% - 20px);
+        right: 10px;
+        bottom: 140px;
+        max-height: 350px;
+    }
+
+    /* Welcome message */
+    .welcome-message h1 {
+        font-size: 2rem;
+    }
+
+    .welcome-message p {
+        font-size: 1rem;
+    }
+}
+
+/* ============================================
+   MOBILE MESSAGES LAYOUT
+   ============================================ */
+@media (max-width: 768px) {
+    .messages-container {
+        height: calc(100vh - 70px);
+        padding-bottom: 140px;
+    }
+
+    .messages-header {
+        padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .messages-layout {
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Friends sidebar - slides in from left */
+    .friends-sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 300px;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .friends-sidebar.mobile-open {
+        transform: translateX(0);
+        box-shadow: 5px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Chat area - full width */
+    .chat-area {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Add toggle button for friends list in messages */
+    .chat-header {
+        position: relative;
+        padding-left: 50px;
+    }
+
+    .chat-header::before {
+        content: '☰';
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .chat-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .chat-partner-name {
+        font-size: 16px;
+    }
+
+    /* Messages list */
+    .messages-list {
+        padding: 10px;
+    }
+
+    .message {
+        max-width: 85%;
+        padding: 10px 14px;
+    }
+
+    /* Message input */
+    .message-input-area {
+        padding: 10px;
+    }
+
+    .input-container {
+        gap: 8px;
+    }
+
+    .input-container input {
+        font-size: 16px;
+        padding: 12px 15px;
+    }
+
+    .input-container button {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    /* Group chat controls */
+    .group-chat-controls {
+        padding: 10px;
+    }
+
+    .group-mode-btn,
+    .create-group-btn,
+    .cancel-group-btn {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+}
+
+/* ============================================
+   EXTRA SMALL SCREENS (480px and below)
+   ============================================ */
+@media (max-width: 480px) {
+    .mobile-menu-toggle {
+        top: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .main-content {
+        padding: 60px 10px 160px 10px;
+    }
+
+    .content-section {
+        padding: 15px 10px;
+    }
+
+    .home-hero {
+        padding: 15px;
+    }
+
+    .hero-text-block h1 {
+        font-size: 1.5rem;
+    }
+
+    .playlist-cover {
+        height: 120px;
+    }
+
+    .playlist-actions-row {
+        flex-direction: column;
+    }
+
+    .playlist-action-btn {
+        width: 100%;
+    }
+
+    /* Music player even more compact */
+    .music-player {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .player-controls {
+        gap: 5px;
+    }
+
+    .control-btn {
+        padding: 6px;
+    }
+
+    .play-pause {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Settings form */
+    .settings-container {
+        padding: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .tags-container {
+        padding: 10px;
+    }
+
+    /* Chat widget smaller */
+    #chat-widget {
+        bottom: 160px;
+        max-height: 300px;
+    }
+
+    #chat-messages {
+        max-height: 180px;
+    }
+
+    /* Popups */
+    .popup-content {
+        width: 98%;
+        margin: 5px;
+    }
+}
+
+/* ============================================
+   TOUCH-FRIENDLY ENHANCEMENTS
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .nav-item {
+        min-height: 48px;
+    }
+
+    .control-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .play-pause {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .btn-primary,
+    .upload-btn,
+    .populate-btn,
+    .refresh-btn {
+        min-height: 48px;
+    }
+
+    .friend-action-btn {
+        min-height: 44px;
+        padding: 12px 16px;
+    }
+
+    /* Remove hover effects that don't work on touch */
+    .nav-item:hover,
+    .playlist-card:hover,
+    .control-btn:hover {
+        transform: none;
+    }
+
+    /* Add active states instead */
+    .nav-item:active {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .playlist-card:active {
+        transform: scale(0.98);
+    }
+
+    .control-btn:active {
+        background: rgba(74, 144, 226, 0.2);
+    }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main-content {
+        padding-top: 60px;
+        padding-bottom: 120px;
+    }
+
+    .music-player {
+        flex-direction: row;
+        padding: 10px 15px;
+    }
+
+    .player-track-info {
+        flex: 1;
+        width: auto;
+    }
+
+    .player-progress {
+        flex: 2;
+        width: auto;
+        max-width: none;
+    }
+
+    #chat-widget {
+        max-height: 200px;
+    }
+}
+
+/* ============================================
+   iOS SPECIFIC FIXES
+   ============================================ */
+@supports (-webkit-touch-callout: none) {
+    /* iOS safe area support */
+    .main-content {
+        padding-bottom: calc(150px + env(safe-area-inset-bottom));
+    }
+
+    .global-player-container {
+        bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .music-player {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    /* Fix for iOS input zoom */
+    input, select, textarea {
+        font-size: 16px;
+    }
 }

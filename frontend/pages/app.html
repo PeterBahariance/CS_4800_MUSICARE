@@ -10,14 +10,25 @@
 </head>
 
 <body>
+    <!-- Mobile Menu Toggle Button -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
     <!-- Sidebar Navigation -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>Musicare</h3>
             <div id="user-info"
                 style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px; display: none;">
                 <div>Signed in as:</div>
-                <div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
+                <!--<div id="user-email" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>-->
+                <div id="user-name" style="font-weight: bold; margin-top: 5px; word-break: break-all;"></div>
             </div>
     
             <div class="github-link">
@@ -46,6 +57,10 @@
             <div class="nav-item" data-tab="friends-feed">
                 <span class="nav-icon">👥</span>
                 <span class="nav-text">Friends Posts</span>
+            </div>
+            <div class="nav-item" data-tab="profile">
+                <span class="nav-icon">🪪</span>
+                <span class="nav-text">Profile</span>
             </div>
             <div class="nav-item" style="display: none;">
                 <span class="nav-icon">🔔</span>
@@ -199,6 +214,71 @@
                 </div>
             </div>
         </div>
+
+        <div id="profile-content" class="content-section" style="display: none;">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h2>Account Settings</h2>
+                    <p>Update your profile information</p>
+                </div>
+
+                <form class="settings-form" id="settings-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" 
+                            placeholder="Your username">
+                        <small>This will be your unique identifier on the platform</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="displayName">Display Name</label>
+                        <input type="text" id="displayName" name="displayName" 
+                            placeholder="Your display name">
+                        <small>This is how others will see you</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" 
+                            disabled 
+                            style="opacity: 0.6; cursor: not-allowed;">
+                        <small>Email cannot be changed for security reasons</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dailyListeningGoal">Daily Listening Goal (minutes)</label>
+                        <input type="number" id="dailyListeningGoal" name="dailyListeningGoal" 
+                            placeholder="30" min="0" max="1440">
+                        <small>Set your daily music listening goal (0-1440 minutes)</small>
+                    </div>                        
+
+                    <div class="form-group">
+                        <label>Health Goals</label>
+                        <div id="profile-health-goals" class="tags-container">
+                            <span class="empty-tag">None set</span>
+                        </div>
+                        <small>Health goals can be set during initial setup</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Music Preferences</label>
+                        <div id="profile-music-preferences" class="tags-container">
+                            <span class="empty-tag">None set</span>
+                        </div>
+                        <small>Music preferences can be set during initial setup</small>
+                    </div>
+                    <div class="message-div">
+
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="save-profile-btn" class="btn-primary">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <!-- Global Music Player -->
@@ -251,6 +331,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Hidden content templates -->
     <div class="content-templates" style="display: none;">
@@ -308,23 +390,58 @@
             apiKey: firebaseConfig?.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'missing'
         });
 
+        // Import the user profile service
+        import userProfileService from '../src/features/profile/userProfile.js';
+
         // Update UI based on auth state
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             const userInfo = document.getElementById('user-info');
-            const userEmail = document.getElementById('user-email');
+            const userName = document.getElementById('user-name');
+
+            // Function to update username display
+            const updateUsernameDisplay = () => {
+                if (user) {
+                    const maskedName = userProfileService.getMaskedDisplayName();
+                    userName.textContent = maskedName;
+                    userInfo.style.display = 'block';
+                }
+            };
 
             if (user) {
-                // Show only first 3 characters
-                const masked = email.length > 3
-                    ? email.slice(0, 3) + "***"
-                    : email;
-                
-                // User is signed in
-                userEmail.textContent = masked;
-                userInfo.style.display = 'block';
+                try {
+                    // Load user profile
+                    const params = new URLSearchParams();
+                    if (user.email) params.append('email', user.email);
+                    if (user.uid) params.append('firebaseUid', user.uid);
+                    
+                    const response = await fetch(`/api/users?${params.toString()}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const userProfile = data.user || data;
+                        
+                        // Set profile in service
+                        userProfileService.setProfile(userProfile);
+                        
+                        // Update display
+                        updateUsernameDisplay();
+                        
+                        // Listen for future updates
+                        userProfileService.addListener(updateUsernameDisplay);
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                    // Fallback
+                    if (user?.email) {
+                        const masked = user.email.split('@')[0]?.slice(0, 3) + "***";
+                        userName.textContent = masked;
+                        userInfo.style.display = 'block';
+                    }
+                }
             } else {
                 // User is signed out
                 userInfo.style.display = 'none';
+                userProfileService.setProfile(null);
+                userProfileService.removeListener(updateUsernameDisplay);
             }
         });
 
@@ -426,7 +543,10 @@
             chatWidget.classList.toggle("minimized");
             toggleBtn.textContent = chatWidget.classList.contains("minimized") ? "+" : "−";
         });
+
+        
     </script>
+
 
     <!-- User Profile Popup -->
     <div class="popup-overlay" id="user-profile-popup">

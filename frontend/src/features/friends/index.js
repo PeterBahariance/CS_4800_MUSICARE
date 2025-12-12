@@ -318,6 +318,19 @@ class FriendSystem {
                 this.hideUserLibraryPopup();
             }
         });
+
+        // Listen for profile updates to refresh current user data
+        window.addEventListener('musicare:profile-updated', (event) => {
+            console.log('🔍 FriendSystem: Profile updated, refreshing user data');
+            if (event.detail && this.currentUser) {
+                // Update local current user data
+                this.currentUser = {
+                    ...this.currentUser,
+                    ...event.detail
+                };
+                console.log('🔍 FriendSystem: Updated current user:', this.currentUser);
+            }
+        });
     }
 
     setupFriendActionButtons() {
