@@ -220,6 +220,19 @@ class MessagingSystem {
                 this.filterFriends(e.target.value);
             });
         }
+
+        // Listen for profile updates to refresh current user data
+        window.addEventListener('musicare:profile-updated', (event) => {
+            console.log('💬 MessagingSystem: Profile updated, refreshing user data');
+            if (event.detail && this.currentUser) {
+                // Update local current user data
+                this.currentUser = {
+                    ...this.currentUser,
+                    ...event.detail
+                };
+                console.log('💬 MessagingSystem: Updated current user:', this.currentUser);
+            }
+        });
     }
 
     /**

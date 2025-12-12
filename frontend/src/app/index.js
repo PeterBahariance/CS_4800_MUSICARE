@@ -383,3 +383,160 @@ initChat({
 });
 console.log('✅ Chatbot initialized successfully');
 
+/**
+ * Profile Update Handler
+ *
+ * Listens for profile updates and refreshes the UI across all components.
+ * This ensures the sidebar, messages, and posts reflect the updated user info.
+ *
+ * @listens musicare:profile-updated
+ */
+window.addEventListener('musicare:profile-updated', (event) => {
+    const updatedProfile = event.detail;
+    console.log('🔄 Profile updated, refreshing UI...', updatedProfile);
+    
+    if (!updatedProfile) return;
+    
+    // Update the global user context
+    if (window.musicareUserContext) {
+        window.musicareUserContext = {
+            ...window.musicareUserContext,
+            ...updatedProfile
+        };
+    }
+    
+    // Update sidebar display name
+    const userNameElement = document.getElementById('user-name');
+    if (userNameElement) {
+        const displayName = updatedProfile.username || 
+                          updatedProfile.displayName || 
+                          updatedProfile.email?.split('@')[0] || 
+                          'User';
+        userNameElement.textContent = displayName;
+    }
+    
+    // Dispatch event for other modules to refresh their data
+    document.dispatchEvent(new CustomEvent('musicare:user-context-updated', {
+        detail: updatedProfile
+    }));
+    
+    console.log('✅ UI refreshed with updated profile');
+});
+
+/**
+ * Mobile Navigation System
+ *
+ * Handles hamburger menu toggle and mobile sidebar navigation.
+ * Includes overlay click handling and escape key support.
+ */
+
+/**
+ * Initialize Mobile Menu
+ *
+ * Sets up event listeners for mobile navigation toggle.
+ *
+ * @function initMobileMenu
+ */
+function initMobileMenu() {
+    const menuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (!menuToggle || !sidebar || !overlay) {
+        console.warn('📱 Mobile menu elements not found');
+        return;
+    }
+
+    /**
+     * Toggle Mobile Sidebar
+     *
+     * Opens or closes the mobile sidebar with animation.
+     *
+     * @function toggleMobileSidebar
+     * @param {boolean} [forceClose=false] - Force close the sidebar
+     */
+    function toggleMobileSidebar(forceClose = false) {
+        const isOpen = sidebar.classList.contains('open');
+        
+        if (forceClose || isOpen) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            menuToggle.classList.remove('active');
+            document.body.style.overflow = '';
+        } else {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            menuToggle.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    // Toggle button click
+    menuToggle.addEventListener('click', () => toggleMobileSidebar());
+
+    // Overlay click closes sidebar
+    overlay.addEventListener('click', () => toggleMobileSidebar(true));
+
+    // Close sidebar when nav item is clicked (on mobile)
+    const navItems = sidebar.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                toggleMobileSidebar(true);
+            }
+        });
+    });
+
+    // Close sidebar on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+            toggleMobileSidebar(true);
+        }
+    });
+
+    // Close sidebar on window resize if going to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && sidebar.classList.contains('open')) {
+            toggleMobileSidebar(true);
+        }
+    });
+
+    console.log('📱 Mobile menu initialized');
+}
+
+/**
+ * Initialize Messages Mobile Toggle
+ *
+ * Sets up click handler on chat header to toggle friends sidebar in messages view.
+ *
+ * @function initMessagesMobileToggle
+ */
+function initMessagesMobileToggle() {
+    const chatHeader = document.querySelector('.chat-header');
+    const friendsSidebar = document.querySelector('.messages-layout .friends-sidebar');
+    
+    if (!chatHeader || !friendsSidebar) {
+        return;
+    }
+
+    chatHeader.addEventListener('click', (e) => {
+        // Only trigger on mobile and when clicking the header area (not buttons inside)
+        if (window.innerWidth <= 768 && e.target.closest('.chat-header')) {
+            friendsSidebar.classList.toggle('mobile-open');
+        }
+    });
+
+    // Close friends sidebar when a friend is selected
+    const friendsChatList = document.getElementById('friends-chat-list');
+    if (friendsChatList) {
+        friendsChatList.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                friendsSidebar.classList.remove('mobile-open');
+            }
+        });
+    }
+}
+
+// Initialize mobile features
+initMobileMenu();
+initMessagesMobileToggle();

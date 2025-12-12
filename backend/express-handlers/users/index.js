@@ -194,10 +194,14 @@ async function updateUser(req, res) {
   console.log('🔄 Users API: PATCH request received');
 
   // Extract request body data
-  const { id, firebaseUid } = req.body;
+  const { id, firebaseUid, username, displayName, dailyListeningGoal, timezone, healthGoals, musicPreferences } = req.body;
   console.log('🔄 Users API: Update data -', {
     id: id ? id.substring(0, 8) + '...' : 'not provided',
-    firebaseUid: firebaseUid ? firebaseUid.substring(0, 8) + '...' : 'not provided'
+    firebaseUid: firebaseUid ? firebaseUid.substring(0, 8) + '...' : 'not provided',
+    username: username || 'not provided',
+    displayName: displayName || 'not provided',
+    dailyListeningGoal: dailyListeningGoal !== undefined ? dailyListeningGoal : 'not provided',
+    timezone: timezone || 'not provided'
   });
 
   /**
@@ -219,18 +223,34 @@ async function updateUser(req, res) {
     console.log('🔄 Users API: Updating user in database...');
 
     /**
+     * Build update data object
+     *
+     * Only include fields that were actually provided in the request.
+     * This prevents accidentally setting fields to null/undefined.
+     */
+    const updateData = {
+      updatedAt: new Date() // Always update timestamp
+    };
+
+    // Add optional fields only if provided
+    if (firebaseUid !== undefined) updateData.firebaseUid = firebaseUid;
+    if (username !== undefined) updateData.username = username;
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (dailyListeningGoal !== undefined) updateData.dailyListeningGoal = dailyListeningGoal;
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (healthGoals !== undefined) updateData.healthGoals = healthGoals;
+    if (musicPreferences !== undefined) updateData.musicPreferences = musicPreferences;
+
+    console.log('🔄 Users API: Update data object:', updateData);
+
+    /**
      * Update user record in database
      *
-     * Uses Prisma's update method with conditional data assignment.
-     * The `|| undefined` pattern ensures we don't set fields to null
-     * if they weren't provided in the request.
+     * Uses Prisma's update method with the constructed data object.
      */
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        firebaseUid: firebaseUid || undefined,
-        updatedAt: new Date() // Explicitly update timestamp
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
